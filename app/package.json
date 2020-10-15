@@ -25,6 +25,7 @@
   "dependencies": {
     "@types/prismjs": "^1.16.1",
     "preact": "^10.3.1",
+    "preact-cli": "3.0.0",
     "preact-jsx-chai": "^3.0.0",
     "preact-markup": "^2.0.0",
     "preact-render-to-string": "^5.1.4",
