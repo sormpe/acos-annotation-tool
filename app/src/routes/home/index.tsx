@@ -126,6 +126,8 @@ const Home: FunctionalComponent = () => {
       
       
       let json: any = jsonResult;
+      json[0].language = syntaxHighlight.value;
+      json[1].contentblock = textvalue;
       json[2].annotations = [];
       (annotations as annotationType[]).map((a: any, idx: any) => {
         console.log("lol", a)
@@ -140,6 +142,8 @@ const Home: FunctionalComponent = () => {
       
       console.log(rst);
       setRstResult(rst);
+      setJsonResult(json);
+
       const codeOutput = document.getElementById('code-output') as any;
       console.log("codeOutput", codeOutput);
     }
