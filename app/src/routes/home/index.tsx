@@ -48,7 +48,8 @@ const Home: FunctionalComponent = () => {
     
         
     function getSelectedTextRange(codeToAnnotate: HTMLInputElement) {
-      console.log("")
+      console.log("getSelectedTextRange codeToAnnotate", codeToAnnotate.value)
+
       const from = codeToAnnotate.selectionStart as number;
       const to = codeToAnnotate.selectionEnd as number;
       return {from, to};
@@ -56,6 +57,7 @@ const Home: FunctionalComponent = () => {
         
     const addAnnotation = () => {
       const codeToAnnotate = document.getElementById('code-to-annotate') as HTMLInputElement;
+      const originalcode = code;
       const {from, to} = getSelectedTextRange(codeToAnnotate);
       console.log("from, to", from, to);
       console.log("textvalue", textvalue);
@@ -66,7 +68,6 @@ const Home: FunctionalComponent = () => {
       console.log("modifiedCode code", code)
 
       setTextvalue(modifiedCode);
-      // setCode(modifiedCode);
 
       codeToAnnotate.value = modifiedCode;
 
@@ -79,12 +80,13 @@ const Home: FunctionalComponent = () => {
     };
 
     const replaceAt = (from: number, to: number, replacement: string) => {
+
       console.log("code.value", textvalue, from, to, replacement.length)
       console.log("sub 1", textvalue.substr(0, from));
       console.log("sub 2", textvalue.substr(to, code.length));
       console.log("replacement", replacement);
 
-      const modified = code.substr(0, from) + replacement + textvalue.substr(to, code.length);
+      const modified = textvalue.substr(0, from) + replacement + textvalue.substr(to, textvalue.length);
       console.log("modified.value", modified);
 
       return modified;
