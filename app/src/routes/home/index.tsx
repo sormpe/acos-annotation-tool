@@ -216,7 +216,7 @@ const Home: FunctionalComponent = () => {
     const handleChange = (e: any) => {
       console.log('e', e.target.value);
       setTextvalue(e.target.value);
-
+      setCode(e.target.value);
     }
 
     const handleHighLightChange = (e: any) => {
