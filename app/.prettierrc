@@ -1,1 +1,7 @@
-tabWidth: 4
+{
+  "semi": true,
+  "useTabs": false,
+  "tabWidth": 2,
+  "bracketSpacing": true,
+  "singleQuote": true
+}
