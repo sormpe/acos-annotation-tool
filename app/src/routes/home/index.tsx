@@ -36,6 +36,11 @@ const Home: FunctionalComponent = () => {
   const [syntaxHighlight, setSyntaxHighlight] = useState<string>('javascript');
 
   useEffect(() => {
+    console.log('textvalue changed', textvalue);
+    removeAnnotationMarks();
+  }, [textvalue]);
+
+  useEffect(() => {
     console.log('code changed', code);
   }, [code]);
 
@@ -52,20 +57,14 @@ const Home: FunctionalComponent = () => {
   }
 
   const addAnnotation = () => {
-    const codeToAnnotate = document.getElementById(
-      'code-to-annotate'
-    ) as HTMLInputElement;
+    const codeToAnnotate = document.getElementById('code-to-annotate') as HTMLInputElement;
     const originalcode = code;
     const { from, to } = getSelectedTextRange(codeToAnnotate);
     console.log('from, to', from, to);
     console.log('textvalue', textvalue);
     const selection = codeToAnnotate.value.substring(from, to);
     const index = annotations.length + 1;
-    const modifiedCode = replaceAt(
-      from,
-      to,
-      index + '«' + selection.toString() + '»'
-    );
+    const modifiedCode = replaceAt(from, to, index + '«' + selection.toString() + '»', textvalue);
     console.log('modifiedCode text value', modifiedCode);
     console.log('modifiedCode code', code);
 
@@ -80,16 +79,13 @@ const Home: FunctionalComponent = () => {
     });
   };
 
-  const replaceAt = (from: number, to: number, replacement: string) => {
-    console.log('code.value', textvalue, from, to, replacement.length);
-    console.log('sub 1', textvalue.substr(0, from));
-    console.log('sub 2', textvalue.substr(to, code.length));
+  const replaceAt = (from: number, to: number, replacement: string, value: string) => {
+    console.log('code.value', value, from, to, replacement.length);
+    console.log('sub 1', value.substr(0, from));
+    console.log('sub 2', value.substr(to, code.length));
     console.log('replacement', replacement);
 
-    const modified =
-      textvalue.substr(0, from) +
-      replacement +
-      textvalue.substr(to, textvalue.length);
+    const modified = value.substr(0, from) + replacement + value.substr(to, value.length);
     console.log('modified.value', modified);
 
     return modified;
@@ -109,12 +105,8 @@ const Home: FunctionalComponent = () => {
   };
 
   const restructurify = () => {
-    const syntaxHighlight = document.getElementById(
-      'syntax-highlight-input'
-    ) as HTMLInputElement;
-    const codeToAnnotate = document.getElementById(
-      'code-to-annotate'
-    ) as HTMLInputElement;
+    const syntaxHighlight = document.getElementById('syntax-highlight-input') as HTMLInputElement;
+    const codeToAnnotate = document.getElementById('code-to-annotate') as HTMLInputElement;
 
     let rst = '';
     rst += '.. annotated::\n';
@@ -124,9 +116,7 @@ const Home: FunctionalComponent = () => {
 
     (annotations as annotationType[]).map((a: any, idx: any) => {
       console.log('restructurify a', a.index);
-      const input = document.getElementById(
-        'annotation-input-' + a.index.toString()
-      ) as any;
+      const input = document.getElementById('annotation-input-' + a.index.toString()) as any;
       console.log('restructurify input', input.value);
 
       rst += '\t.. annotation::\n\t\t' + input.value + '\n\n';
@@ -142,9 +132,7 @@ const Home: FunctionalComponent = () => {
 
       console.log('a.index', a.index);
       console.log('json index', json[2].annotations[a.index - 1]);
-      const input = document.getElementById(
-        'annotation-input-' + a.index.toString()
-      ) as any;
+      const input = document.getElementById('annotation-input-' + a.index.toString()) as any;
       json[2].annotations.push({
         index: json[2].annotations.length,
         content: a.content,
@@ -160,18 +148,28 @@ const Home: FunctionalComponent = () => {
     console.log('codeOutput', codeOutput);
   };
 
+  const removeAnnotationMarks = () => {
+    let code = textvalue;
+
+    (annotations as annotationType[]).map((a: any, idx: any) => {
+      const coords = code.indexOf(a.index + '«' + a.content + '»');
+      if (coords !== -1) {
+        const newTextValue = code.substring(coords + 2, coords + a.content.length + 2);
+
+        const modifiedCode = replaceAt(coords, coords + a.content.length + 3, newTextValue, code);
+
+        code = modifiedCode;
+      }
+    });
+    setCode(code);
+  };
+
   const removeAnnotation = (e: any, index: number) => {
     console.log('e', e);
     console.log('remove index', index);
 
     const idx = Number(e.target.getAttribute('data-index'));
-    console.log('idx', typeof idx);
-
-    const initialLength = annotations.length;
-
-    const removedAnnoation = annotations.find(
-      a => a.index === index
-    ) as annotationType;
+    const removedAnnoation = annotations.find(a => a.index === index) as annotationType;
     console.log('coords remove annoation', removedAnnoation);
     const splicedAnnotations = annotations.filter(item => item.index !== idx);
 
@@ -179,27 +177,10 @@ const Home: FunctionalComponent = () => {
 
     setAnnotations(splicedAnnotations);
 
-    console.log('textvalue', textvalue);
-    const coords = textvalue.indexOf(
-      index + '«' + removedAnnoation.content + '»'
-    );
-    console.log('coords', coords);
-    console.log(
-      'coords sub',
-      coords + 2,
-      coords + 2 + removedAnnoation.content.length
-    );
+    const coords = textvalue.indexOf(index + '«' + removedAnnoation.content + '»');
 
-    const test = textvalue.substring(
-      coords + 2,
-      coords + removedAnnoation.content.length + 2
-    );
-    console.log('coords test', test);
-    const modifiedCode = replaceAt(
-      coords,
-      coords + removedAnnoation.content.length + 3,
-      test
-    );
+    const newTextValue = textvalue.substring(coords + 2, coords + removedAnnoation.content.length + 2);
+    const modifiedCode = replaceAt(coords, coords + removedAnnoation.content.length + 3, newTextValue, textvalue);
     console.log('modifiedCode text value', modifiedCode);
     console.log('modifiedCode code', code);
 
@@ -246,7 +227,9 @@ const Home: FunctionalComponent = () => {
   const handleChange = (e: any) => {
     console.log('e', e.target.value);
     setTextvalue(e.target.value);
-    setCode(e.target.value);
+    if (annotations.length === 0) {
+      setCode(e.target.value);
+    }
   };
 
   const handleHighLightChange = (e: any) => {
@@ -256,9 +239,7 @@ const Home: FunctionalComponent = () => {
 
   const inputChange = (e: any, index: number) => {
     console.log('e', e.target.value);
-    const annotation = annotations.find(
-      a => a.index === index
-    ) as annotationType;
+    const annotation = annotations.find(a => a.index === index) as annotationType;
     const a = { ...annotation, annotation: e.target.value };
     updateAnnotations(a);
     console.log('annotations', annotations);
@@ -269,9 +250,7 @@ const Home: FunctionalComponent = () => {
 
     console.log('e', e.target.id.slice(-1));
     const index: number = Number(e.target.id.slice(-1));
-    const annotation = annotations.find(
-      a => a.index === index
-    ) as annotationType;
+    const annotation = annotations.find(a => a.index === index) as annotationType;
 
     console.log('annotation', annotation);
     const content = annotation.content;
@@ -297,9 +276,7 @@ const Home: FunctionalComponent = () => {
 
     console.log('e', e.target.id.slice(-1));
     const index: number = Number(e.target.id.slice(-1));
-    const annotation = annotations.find(
-      a => a.index === index
-    ) as annotationType;
+    const annotation = annotations.find(a => a.index === index) as annotationType;
 
     console.log('annotation', annotation);
     const content = annotation.content;
@@ -327,10 +304,7 @@ const Home: FunctionalComponent = () => {
 
     // handle 4-space indent on
     if (e.key === 'Tab') {
-      value =
-        value.substring(0, selStartPos) +
-        '    ' +
-        value.substring(selStartPos, value.length);
+      value = value.substring(0, selStartPos) + '    ' + value.substring(selStartPos, value.length);
       e.currentTarget.selectionStart = selStartPos + 3;
       e.currentTarget.selectionEnd = selStartPos + 4;
       e.preventDefault();
@@ -340,9 +314,7 @@ const Home: FunctionalComponent = () => {
   };
 
   const listAnnotations = (annotations as annotationType[]).map(a => {
-    const annotation = annotations.find(
-      x => x.index === a.index
-    ) as annotationType;
+    const annotation = annotations.find(x => x.index === a.index) as annotationType;
 
     if (a) {
       return (
@@ -351,16 +323,10 @@ const Home: FunctionalComponent = () => {
             <input
               onInput={e => inputChange(e, a.index)}
               id={'annotation-input-' + a.index}
-              value={
-                annotation.index === a.index ? annotation.annotation : 'error'
-              }
+              value={annotation.index === a.index ? annotation.annotation : 'error'}
             />
             {a.content ? a.index + ': ' + a.content : 'error'}
-            <button
-              onClick={e => removeAnnotation(e, a.index)}
-              id="remove-button"
-              data-index={a.index}
-            >
+            <button onClick={e => removeAnnotation(e, a.index)} id="remove-button" data-index={a.index}>
               x
             </button>
           </li>
@@ -372,22 +338,11 @@ const Home: FunctionalComponent = () => {
   return (
     <div class={style.home}>
       <div class={style.leftside}>
-        <input
-          id="syntax-highlight-input"
-          value={syntaxHighlight}
-          onInput={handleHighLightChange}
-        />
+        <input id="syntax-highlight-input" value={syntaxHighlight} onInput={handleHighLightChange} />
 
         <pre>
           <code>
-            <textarea
-              onKeyDown={handleKeyDown}
-              value={textvalue}
-              id="code-to-annotate"
-              cols={100}
-              rows={10}
-              onInput={handleChange}
-            />
+            <textarea onKeyDown={handleKeyDown} value={textvalue} class={style['text-area']} id="code-to-annotate" onInput={handleChange} />
           </code>
         </pre>
 
@@ -423,7 +378,6 @@ const Home: FunctionalComponent = () => {
       </div>
 
       <div id={'right'} class={style.rightside}>
-        <h3>Preview</h3>
         <div id={style.codeblock}>
           {code && <CodeBlock code={code} language={syntaxHighlight} />}
           {(annotations as annotationType[]).map(a => {
@@ -431,12 +385,7 @@ const Home: FunctionalComponent = () => {
             console.log('id', 'annotation-input-' + a.index.toString());
             if (annotations.length > 0) {
               return (
-                <div
-                  id={'annotation-for-' + a.index.toString()}
-                  class={style.annotation}
-                  onMouseOver={onMouseOver}
-                  onMouseLeave={onMouseLeave}
-                >
+                <div id={'annotation-for-' + a.index.toString()} class={style.annotation} onMouseOver={onMouseOver} onMouseLeave={onMouseLeave}>
                   {a ? a.annotation : 'waiting...'}
                 </div>
               );
