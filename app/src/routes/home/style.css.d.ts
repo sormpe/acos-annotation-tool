@@ -7,6 +7,7 @@ declare namespace StyleCssNamespace {
     leftside: string;
     preview: string;
     rightside: string;
+    'text-area': string;
     textvalue: string;
   }
 }
