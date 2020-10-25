@@ -198,11 +198,15 @@ const Home: FunctionalComponent = () => {
     setAnnotations([]);
 
     console.log('moveAnnotationDown');
-    const content = annotations[index - 1].annotation;
-    const bottomContent = annotations[index].annotation;
+    const content = annotations[index - 1].content;
+    const bottomContent = annotations[index].content;
+    const annotation = annotations[index - 1].annotation;
+    const bottomAnnotation = annotations[index].annotation;
 
-    annotations[index - 1].annotation = bottomContent;
-    annotations[index].annotation = content;
+    annotations[index - 1].content = bottomContent;
+    annotations[index].content = content;
+    annotations[index - 1].annotation = bottomAnnotation;
+    annotations[index].annotation = annotation;
     setAnnotations(annotations);
     restructurify();
   };
@@ -210,11 +214,15 @@ const Home: FunctionalComponent = () => {
   const moveAnnotationUp = (e: any, index: number) => {
     setAnnotations([]);
 
-    const aboveContent = annotations[index - 2].annotation;
-    const content = annotations[index - 1].annotation;
+    const aboveContent = annotations[index - 2].content;
+    const content = annotations[index - 1].content;
+    const aboveAnnotation = annotations[index - 2].annotation;
+    const annotation = annotations[index - 1].annotation;
 
-    annotations[index - 1].annotation = aboveContent;
-    annotations[index - 2].annotation = content;
+    annotations[index - 1].content = aboveContent;
+    annotations[index - 2].content = content;
+    annotations[index - 1].annotation = aboveAnnotation;
+    annotations[index - 2].annotation = annotation;
     console.log('moveAnnotationUp');
     setAnnotations(annotations);
     restructurify();
