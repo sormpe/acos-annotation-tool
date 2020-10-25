@@ -3,12 +3,14 @@ import { useEffect, useState, useRef, useCallback } from 'preact/hooks';
 import * as style from './style.css';
 
 import CodeBlock from '../../components/codeblock';
+import { highlight } from 'prismjs';
 
 const Home: FunctionalComponent = () => {
   type annotationType = {
     index: number;
     content: any;
     annotation: string;
+    locIndex: number;
   };
 
   type annotationsType = {
@@ -75,7 +77,8 @@ const Home: FunctionalComponent = () => {
     updateAnnotations({
       index: index,
       content: selection.toString(),
-      annotation: ''
+      annotation: '',
+      locIndex: from
     });
   };
 
@@ -245,6 +248,57 @@ const Home: FunctionalComponent = () => {
     console.log('annotations', annotations);
   };
 
+  const highlightNodes = (e: HTMLElement, string: string) => {
+    const nodes = e.children[0];
+    for (let i = 0; i < nodes.childNodes.length; i++) {
+      // console.log('children', nodes.childNodes[i]);
+      const e = nodes.childNodes[i] as HTMLElement;
+      console.log('children', e);
+      console.log('inc', e.innerText, string);
+      if (e.innerText === string) {
+        const r = e.firstChild as any;
+        for (let i = 0; i < e.childNodes.length; i++) {
+          console.log('e.childNodes[i]', e.childNodes[i]);
+          const c = e.childNodes[i] as HTMLElement;
+          console.log('classname1', c);
+          const parent = c.parentNode as HTMLElement;
+          if (parent.className === 'token-line') {
+            c.id = 'search-term';
+
+            c.setAttribute('style', 'background-color:crimson');
+          }
+        }
+
+        return e;
+      } else if (e.innerText.includes(string)) {
+        console.log('include!');
+        const s = e.innerText.split(string);
+        console.log('include ', s);
+        const span = document.createElement('span');
+        span.textContent = string;
+        e.innerText = s[0];
+        const p = e.parentNode as any;
+        console.log('parent', p);
+
+        e.appendChild(span);
+        console.log('classname2', p);
+        const parent = e.parentNode as HTMLElement;
+        if (e.childNodes.length > 0) {
+          for (let i = 0; i < e.childNodes.length; i++) {
+            const c = e.children[i];
+            c.id = 'search-term';
+
+            c.setAttribute('style', 'background-color:crimson');
+          }
+        } else {
+          e.id = 'search-term';
+
+          e.setAttribute('style', 'background-color:crimson');
+        }
+      }
+    }
+  };
+
   const onMouseOver = (e: any) => {
     console.log('e', e);
 
@@ -253,47 +307,36 @@ const Home: FunctionalComponent = () => {
     const annotation = annotations.find(a => a.index === index) as annotationType;
 
     console.log('annotation', annotation);
-    const content = annotation.content;
-    console.log('content', content);
+    console.log('annotation loc', annotation.locIndex);
 
-    const contentDiv = document.getElementById('content-block') as HTMLElement;
-    console.log('contentDiv', contentDiv.childNodes[0].childNodes);
-    const nodeList = contentDiv.childNodes[0].childNodes[0].childNodes;
-    for (let i = 0; i < nodeList.length; i++) {
-      let item = nodeList[i] as any;
-      console.log('item', item);
-      console.log('item type', typeof item.innerText);
-      console.log('content type', typeof content);
-      console.log('item includes content?', item.innerText.includes(content));
-      if (item.innerText.includes(content)) {
-        item.setAttribute('style', 'background-color:crimson');
-      }
-    }
+    const content = annotation.content;
+
+    const d = document.getElementById('content-block') as HTMLElement;
+    highlightNodes(d, content);
   };
 
-  const onMouseLeave = (e: any) => {
-    console.log('e', e);
-
-    console.log('e', e.target.id.slice(-1));
-    const index: number = Number(e.target.id.slice(-1));
-    const annotation = annotations.find(a => a.index === index) as annotationType;
-
-    console.log('annotation', annotation);
-    const content = annotation.content;
-
-    const contentDiv = document.getElementById('content-block') as HTMLElement;
-    console.log('contentDiv', contentDiv.childNodes[0].childNodes);
-    const nodeList = contentDiv.childNodes[0].childNodes[0].childNodes;
-    for (let i = 0; i < nodeList.length; i++) {
-      let item = nodeList[i] as any;
-      console.log('item', item);
-      console.log('item type', typeof item.innerText);
-      console.log('content type', typeof content);
-      console.log('item includes content?', item.innerText.includes(content));
-      if (item.innerText.includes(content)) {
-        item.removeAttribute('style');
+  function removeChildren(elem: any) {
+    console.log('removeChildren', elem);
+    while (elem.hasChildNodes()) {
+      if (elem.id === 'search-term') {
+        elem.removeAttribute('style');
       }
+
+      removeChildren(elem.lastChild);
+      elem.removeChild(elem.lastChild);
     }
+    setCode('');
+  }
+
+  const onMouseLeave = (e: any) => {
+    setCode('');
+
+    const element = document.getElementById('content-block') as HTMLElement;
+    removeChildren(element.childNodes[0]);
+
+    console.log('onMouseLeave element', element.childNodes[0]);
+    console.log('onMouseLeave code', code);
+    setCode(code);
   };
 
   const handleKeyDown = (e: any) => {
