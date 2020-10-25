@@ -26,24 +26,16 @@ const CodeBlock: FunctionalComponent<CodeProps> = ({ code, language }) => {
 
   return (
     <div id="content-block">
-      <Highlight
-        {...defaultProps}
-        theme={theme}
-        code={code}
-        language={language}
-      >
+      <Highlight {...defaultProps} theme={theme} code={code} language={language}>
         {({ className, style, tokens, getLineProps, getTokenProps }) => (
-          <pre
-            class={className}
-            style={'white-space: pre-wrap; padding: 0.6em 0.2em 0.6em 1em;'}
-          >
+          <pre class={className} style={'white-space: pre-wrap; padding: 0.6em 0.2em 0.6em 1em;'}>
             {tokens.map((line, i) => (
               <div {...(getLineProps({ line, key: i }) as any)}>
                 {line.map((token, key) => (
                   <span
                     {...(getTokenProps({
                       token,
-                      key,
+                      key
                     }) as any)}
                   />
                 ))}
