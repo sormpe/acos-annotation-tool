@@ -39,15 +39,19 @@ const Home: FunctionalComponent = () => {
 
   useEffect(() => {
     console.log('textvalue changed', textvalue);
+    restructurify();
+
     removeAnnotationMarks();
   }, [textvalue]);
 
   useEffect(() => {
     console.log('code changed', code);
+    restructurify();
   }, [code]);
 
   useEffect(() => {
     console.log('annotations changed', annotations);
+    restructurify();
   }, [annotations]);
 
   function getSelectedTextRange(codeToAnnotate: HTMLInputElement) {
@@ -190,6 +194,32 @@ const Home: FunctionalComponent = () => {
     setTextvalue(modifiedCode);
   };
 
+  const moveAnnotationDown = (e: any, index: number) => {
+    setAnnotations([]);
+
+    console.log('moveAnnotationDown');
+    const content = annotations[index - 1].annotation;
+    const bottomContent = annotations[index].annotation;
+
+    annotations[index - 1].annotation = bottomContent;
+    annotations[index].annotation = content;
+    setAnnotations(annotations);
+    restructurify();
+  };
+
+  const moveAnnotationUp = (e: any, index: number) => {
+    setAnnotations([]);
+
+    const aboveContent = annotations[index - 2].annotation;
+    const content = annotations[index - 1].annotation;
+
+    annotations[index - 1].annotation = aboveContent;
+    annotations[index - 2].annotation = content;
+    console.log('moveAnnotationUp');
+    setAnnotations(annotations);
+    restructurify();
+  };
+
   const updateAnnotations = (annotation: annotationType) => {
     setAnnotations([]);
 
@@ -246,6 +276,7 @@ const Home: FunctionalComponent = () => {
     const a = { ...annotation, annotation: e.target.value };
     updateAnnotations(a);
     console.log('annotations', annotations);
+    restructurify();
   };
 
   const highlightNodes = (e: HTMLElement, string: string) => {
@@ -361,19 +392,27 @@ const Home: FunctionalComponent = () => {
 
     if (a) {
       return (
-        <div>
-          <li>
-            <input
-              onInput={e => inputChange(e, a.index)}
-              id={'annotation-input-' + a.index}
-              value={annotation.index === a.index ? annotation.annotation : 'error'}
-            />
-            {a.content ? a.index + ': ' + a.content : 'error'}
-            <button onClick={e => removeAnnotation(e, a.index)} id="remove-button" data-index={a.index}>
-              x
-            </button>
-          </li>
-        </div>
+        <li>
+          <input
+            onInput={e => inputChange(e, a.index)}
+            id={'annotation-input-' + a.index}
+            value={annotation.index === a.index ? annotation.annotation : 'error'}
+          />
+          {a.content ? a.content : 'error'}
+          <button onClick={e => removeAnnotation(e, a.index)} id="remove-button" data-index={a.index}>
+            x
+          </button>
+          {annotations.length > 1 ? (
+            <span>
+              {annotations.length > 1 && annotations[a.index] !== undefined ? (
+                <button onClick={e => moveAnnotationDown(e, a.index)}>&darr;</button>
+              ) : null}
+              {annotations.length > 1 && annotations[a.index - 2] !== undefined ? (
+                <button onClick={e => moveAnnotationUp(e, a.index)}>&uarr;</button>
+              ) : null}
+            </span>
+          ) : null}
+        </li>
       );
     }
   });
@@ -392,11 +431,13 @@ const Home: FunctionalComponent = () => {
         <button onClick={addAnnotation} id="add-annotation-button">
           Add annotation
         </button>
+        {/*
         <button onClick={generate} id="restructurify-button">
           ReStructurify
         </button>
+        */}
 
-        <ul id="annotation-list">{listAnnotations}</ul>
+        <ol id="annotation-list">{listAnnotations}</ol>
 
         <hr />
 
