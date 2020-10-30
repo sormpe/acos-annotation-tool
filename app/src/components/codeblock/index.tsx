@@ -1,11 +1,8 @@
 import Highlight, { defaultProps } from 'prism-react-renderer';
 
 import { FunctionalComponent, h, ComponentProps } from 'preact';
-import { useEffect } from 'preact/hooks';
 
 import './../../style/prism.css';
-import oceanicNext from 'prism-react-renderer/themes/oceanicNext';
-import palenight from 'prism-react-renderer/themes/palenight';
 
 interface CodeProps extends ComponentProps<any> {
   code: string;
