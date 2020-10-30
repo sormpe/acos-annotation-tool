@@ -1,6 +1,6 @@
 {
-  "name": "app",
-  "short_name": "app",
+  "name": "Code annotation tool",
+  "short_name": "Code annotation tool",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
