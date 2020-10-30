@@ -39,7 +39,7 @@ const Home: FunctionalComponent = () => {
 
   useEffect(() => {
     restructurify();
-  }, [textvalue, code, annotations]);
+  }, [textvalue, code, annotations, syntaxHighlight]);
 
   function getSelectedTextRange(codeToAnnotate: HTMLInputElement) {
     const from = codeToAnnotate.selectionStart as number;
