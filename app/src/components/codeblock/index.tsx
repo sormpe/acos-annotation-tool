@@ -13,20 +13,9 @@ interface CodeProps extends ComponentProps<any> {
 }
 
 const CodeBlock: FunctionalComponent<CodeProps> = ({ code, language }) => {
-  useEffect(() => {
-    console.log('prism code block', code);
-  }, [code]);
-
-  let theme;
-  if (language === 'javascript') {
-    theme = oceanicNext;
-  } else {
-    theme = palenight;
-  }
-
   return (
     <div id="content-block">
-      <Highlight {...defaultProps} theme={theme} code={code} language={language}>
+      <Highlight {...defaultProps} theme={undefined} code={code} language={language}>
         {({ className, style, tokens, getLineProps, getTokenProps }) => (
           <pre class={className} style={'white-space: pre-wrap; padding: 0.6em 0.2em 0.6em 1em;'}>
             {tokens.map((line, i) => (
