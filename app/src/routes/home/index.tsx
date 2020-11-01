@@ -22,7 +22,8 @@ const Home: FunctionalComponent = () => {
       language: ''
     },
     {
-      contentblock: ''
+      content: '',
+      annotatedContent: ''
     },
     {
       annotations: []
@@ -103,7 +104,9 @@ const Home: FunctionalComponent = () => {
 
     let json: any = jsonResult;
     json[0].language = syntaxHighlight.value;
-    json[1].contentblock = textvalue;
+    json[1].content = code;
+    json[1].annotatedContent = textvalue;
+
     json[2].annotations = [];
     (annotations as annotationType[]).map((annotation: annotationType, idx: any) => {
       json[2].annotations.push({
