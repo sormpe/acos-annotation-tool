@@ -98,10 +98,6 @@ const Home: FunctionalComponent = () => {
     rst += '\n\n';
 
     (annotations as annotationType[]).map((annotation: annotationType, idx: any) => {
-      console.log('restructurify a', annotation.index);
-      const input = document.getElementById('annotation-input-' + annotation.index.toString()) as any;
-      console.log('restructurify input', annotation.annotation);
-
       rst += '\t.. annotation::\n\t\t' + annotation.annotation + '\n\n';
     });
 
@@ -110,12 +106,6 @@ const Home: FunctionalComponent = () => {
     json[1].contentblock = textvalue;
     json[2].annotations = [];
     (annotations as annotationType[]).map((annotation: annotationType, idx: any) => {
-      console.log('lol', annotation);
-      console.log('json', json[2].annotations);
-
-      console.log('a.index', annotation.index);
-      console.log('json index', json[2].annotations[annotation.index - 1]);
-      const input = document.getElementById('annotation-input-' + annotation.index.toString()) as any;
       json[2].annotations.push({
         index: json[2].annotations.length + 1,
         content: annotation.content,
@@ -123,7 +113,6 @@ const Home: FunctionalComponent = () => {
       });
     });
 
-    console.log(rst);
     setRstResult(rst);
     setJsonResult(json);
 
@@ -228,7 +217,6 @@ const Home: FunctionalComponent = () => {
   };
 
   const handleChange = (e: any) => {
-    console.log('e', e.target.value);
     setTextvalue(e.target.value);
     setCode(
       e.target.value
@@ -236,27 +224,45 @@ const Home: FunctionalComponent = () => {
         .replace(/»/g, '')
         .replace(/\s*$/g, '')
     );
+
+    if (annotations.length > 0) {
+      for (let annotation of annotations as any) {
+        const from = e.target.value.indexOf(annotation.index + '«');
+
+        updateAnnotations({
+          index: annotation.index,
+          // prettier-ignore
+          content: e.target.value.split(annotation.index + '«')[1].split('»')[0].replace(/[0-9]+«/g, '').replace(/»/g, ''),
+          beforeContent: e.target.value
+            .split(annotation.index + '«')[0]
+            .replace(/[0-9]+«/g, '')
+            .replace(/»/g, ''),
+          afterContent: e.target.value
+            .split(annotation.index + '«')[1]
+            .split('»')[1]
+            .replace(/[0-9]+«/g, '')
+            .replace(/»/g, ''),
+          annotation: annotation.annotation,
+          locIndex: from
+        });
+      }
+    }
   };
 
   const handleHighLightChange = (e: any) => {
-    console.log('handleHighLightChange', e.target.value);
     setSyntaxHighlight(e.target.value);
   };
 
   const inputChange = (e: any, index: number) => {
-    console.log('e', e.target.value);
     const annotation = annotations.find(a => a.index === index) as annotationType;
     const a = { ...annotation, annotation: e.target.value };
     updateAnnotations(a);
-    console.log('annotations', annotations);
     restructurify();
   };
 
   const highlightNodes = (e: HTMLElement, string: string, before: string, after: string) => {
     const nodes = e.children[0];
 
-    console.log('e.innertext', e.innerText);
-    console.log('e.innertext', e);
     let recurringTextFromLines = '';
     let recurringTextFromLinesArray = [];
 
@@ -328,8 +334,6 @@ const Home: FunctionalComponent = () => {
   const handleKeyDown = (e: any) => {
     let value = textvalue,
       selStartPos = e.currentTarget.selectionStart;
-
-    console.log(e.currentTarget);
 
     // handle 4-space indent on
     if (e.key === 'Tab') {
