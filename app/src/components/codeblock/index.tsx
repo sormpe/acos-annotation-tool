@@ -10,13 +10,7 @@ interface CodeProps extends ComponentProps<any> {
   language: any;
 }
 
-const asd = () => {};
-
 const CodeBlock: FunctionalComponent<CodeProps> = ({ code, language }) => {
-  useEffect(() => {
-    console.log('prism code', code);
-  }, [code]);
-
   return (
     <div id="content-block">
       <Highlight {...defaultProps} theme={undefined} code={code} language={language}>
