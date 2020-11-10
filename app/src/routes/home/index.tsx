@@ -11,6 +11,7 @@ const Home: FunctionalComponent = () => {
   type annotationType = {
     index: number;
     content: any;
+    pureContent: any;
     beforeContent: any;
     afterContent: any;
     annotation: string;
@@ -40,6 +41,7 @@ const Home: FunctionalComponent = () => {
 
   useEffect(() => {
     restructurify();
+    updateAnnotationsWithEvent(textvalue);
   }, [textvalue, code, annotations, syntaxHighlight]);
 
   function getSelectedTextRange(codeToAnnotate: HTMLInputElement) {
@@ -52,25 +54,42 @@ const Home: FunctionalComponent = () => {
     const codeToAnnotate = document.getElementById('code-to-annotate') as HTMLInputElement;
     const { from, to } = getSelectedTextRange(codeToAnnotate);
     const selection = codeToAnnotate.value.substring(from, to);
+    console.log('selection', selection);
+
     const beforeAnnotation = codeToAnnotate.value.substring(0, from);
+    console.log('before', beforeAnnotation.replace(/[0-9]+«/g, '').replace(/»/g, ''));
 
     const afterAnnotation = codeToAnnotate.value.substring(to, code.length + annotations.length * 3);
+    /*
+    if (codeToAnnotate.value.substring(to - 1, to) === '\n' && codeToAnnotate.value.substring(to - 2, to - 1) !== '\n') {
+      afterAnnotation = codeToAnnotate.value.substring(to - 1, code.length + annotations.length * 3);
+    } else {
+      afterAnnotation = codeToAnnotate.value.substring(to, code.length + annotations.length * 3);
+    }
+    */
+    console.log('afterAnnotation', afterAnnotation);
 
     const index = annotations.length + 1;
-    const modifiedCode = replaceAt(from, to, index + '«' + selection.toString() + '»', textvalue);
+    const modifiedCode = replaceAt(from, to, index + '«' + selection + '»', textvalue);
 
     setTextvalue(modifiedCode);
 
     codeToAnnotate.value = modifiedCode;
+    // console.log('code1', code);
+    console.log('code2', selection.replace(/[0-9]+«/g, '').replace(/»/g, ''));
+
+    // console.log('code3', code.indexOf(selection.replace(/[0-9]+«/g, '').replace(/»/g, '')));
+    console.log('pureContent', selection);
 
     updateAnnotations({
       index: index,
       // prettier-ignore
-      content: selection.toString().replace(/[0-9]+«/g, '').replace(/»/g, ''),
+      content: selection.replace(/[0-9]+«/g, '').replace(/»/g, ''),
+      pureContent: selection,
       beforeContent: beforeAnnotation.replace(/[0-9]+«/g, '').replace(/»/g, ''),
       afterContent: afterAnnotation.replace(/[0-9]+«/g, '').replace(/»/g, ''),
       annotation: '',
-      locIndex: from
+      locIndex: code.indexOf(selection.replace(/[0-9]+«/g, '').replace(/»/g, ''))
     });
   };
 
@@ -112,7 +131,8 @@ const Home: FunctionalComponent = () => {
       json[2].annotations.push({
         index: json[2].annotations.length + 1,
         content: annotation.content,
-        annotation: annotation.annotation
+        annotation: annotation.annotation,
+        locIndex: annotation.locIndex
       });
     });
 
@@ -146,15 +166,20 @@ const Home: FunctionalComponent = () => {
     annotations[index - 1] = { ...belowAnnotation, index: annotation.index };
     annotations[index] = { ...annotation, index: belowAnnotation.index };
 
-    const firstCoords = textvalue.indexOf(index + '«' + annotation.content + '»');
-    const secondCoords = textvalue.indexOf(index + 1 + '«' + belowAnnotation.content + '»');
+    const firstCoords = textvalue.indexOf(index + '«' + annotation.pureContent + '»');
+    const secondCoords = textvalue.indexOf(index + 1 + '«' + belowAnnotation.pureContent + '»');
 
-    const newTextValue = textvalue.substring(firstCoords + 1, firstCoords + annotation.content.length + 3);
-    let modifiedCode = replaceAt(firstCoords, firstCoords + annotation.content.length + 3, belowAnnotation.index + newTextValue, textvalue);
+    const newTextValue = textvalue.substring(firstCoords + 1, firstCoords + annotation.pureContent.length + 3);
+    let modifiedCode = replaceAt(firstCoords, firstCoords + annotation.pureContent.length + 3, belowAnnotation.index + newTextValue, textvalue);
 
-    const secondnewTextValue = modifiedCode.substring(secondCoords + 1, secondCoords + belowAnnotation.content.length + 3);
+    const secondnewTextValue = modifiedCode.substring(secondCoords + 1, secondCoords + belowAnnotation.pureContent.length + 3);
 
-    modifiedCode = replaceAt(secondCoords, secondCoords + belowAnnotation.content.length + 3, annotation.index + secondnewTextValue, modifiedCode);
+    modifiedCode = replaceAt(
+      secondCoords,
+      secondCoords + belowAnnotation.pureContent.length + 3,
+      annotation.index + secondnewTextValue,
+      modifiedCode
+    );
 
     setTextvalue(modifiedCode);
 
@@ -171,15 +196,23 @@ const Home: FunctionalComponent = () => {
     annotations[index - 2] = { ...annotation, index: aboveAnnotation.index };
     annotations[index - 1] = { ...aboveAnnotation, index: annotation.index };
 
-    const firstCoords = textvalue.indexOf(index + '«' + annotation.content + '»');
-    const secondCoords = textvalue.indexOf(index - 1 + '«' + aboveAnnotation.content + '»');
+    const firstCoords = textvalue.indexOf(index + '«' + annotation.pureContent + '»');
+    const secondCoords = textvalue.indexOf(index - 1 + '«' + aboveAnnotation.pureContent + '»');
 
-    const newTextValue = textvalue.substring(firstCoords + 1, firstCoords + annotation.content.length + 3);
-    let modifiedCode = replaceAt(firstCoords, firstCoords + annotation.content.length + 3, aboveAnnotation.index + newTextValue, textvalue);
+    const newTextValue = textvalue.substring(firstCoords + 1, firstCoords + annotation.pureContent.length + 3);
+    console.log('newTextValue', newTextValue);
 
-    const secondnewTextValue = modifiedCode.substring(secondCoords + 1, secondCoords + aboveAnnotation.content.length + 3);
+    let modifiedCode = replaceAt(firstCoords, firstCoords + annotation.pureContent.length + 3, aboveAnnotation.index + newTextValue, textvalue);
+    console.log('modifiedCode', modifiedCode);
 
-    modifiedCode = replaceAt(secondCoords, secondCoords + aboveAnnotation.content.length + 3, annotation.index + secondnewTextValue, modifiedCode);
+    const secondnewTextValue = modifiedCode.substring(secondCoords + 1, secondCoords + aboveAnnotation.pureContent.length + 3);
+
+    modifiedCode = replaceAt(
+      secondCoords,
+      secondCoords + aboveAnnotation.pureContent.length + 3,
+      annotation.index + secondnewTextValue,
+      modifiedCode
+    );
 
     setTextvalue(modifiedCode);
 
@@ -219,28 +252,23 @@ const Home: FunctionalComponent = () => {
     document.body.removeChild(el);
   };
 
-  const handleChange = (e: any) => {
-    setTextvalue(e.target.value);
-    setCode(
-      e.target.value
-        .replace(/[0-9]+«/g, '')
-        .replace(/»/g, '')
-        .replace(/\s*$/g, '')
-    );
-
+  const updateAnnotationsWithEvent = (e: any) => {
+    console.log('updateAnnotationsWithEvent');
     if (annotations.length > 0) {
       for (let annotation of annotations as any) {
-        const from = e.target.value.indexOf(annotation.index + '«');
+        const from = e.indexOf(annotation.index + '«') - (annotation.index - 1) * 3;
 
+        console.log('from');
         updateAnnotations({
           index: annotation.index,
           // prettier-ignore
-          content: e.target.value.split(annotation.index + '«')[1].split('»')[0].replace(/[0-9]+«/g, '').replace(/»/g, ''),
-          beforeContent: e.target.value
+          content: e.split(annotation.index + '«')[1].split('»')[0].replace(/[0-9]+«/g, '').replace(/»/g, ''),
+          pureContent: e.split(annotation.index + '«')[1].split('»')[0],
+          beforeContent: e
             .split(annotation.index + '«')[0]
             .replace(/[0-9]+«/g, '')
             .replace(/»/g, ''),
-          afterContent: e.target.value
+          afterContent: e
             .split(annotation.index + '«')[1]
             .split('»')[1]
             .replace(/[0-9]+«/g, '')
@@ -250,6 +278,15 @@ const Home: FunctionalComponent = () => {
         });
       }
     }
+  };
+
+  const handleChange = (e: any) => {
+    console.log('e.target.value', e.target.value.replace(/[0-9]+«/g, '').replace(/»/g, ''));
+    setTextvalue(e.target.value);
+    console.log('last', e.target.value.slice(-1));
+    setCode(e.target.value.replace(/[0-9]+«/g, '').replace(/»/g, ''));
+
+    updateAnnotationsWithEvent(e.target.value);
   };
 
   const handleHighLightChange = (e: any) => {
@@ -263,7 +300,7 @@ const Home: FunctionalComponent = () => {
     restructurify();
   };
 
-  const highlightNodes = (e: HTMLElement, string: string, before: string, after: string) => {
+  const highlightNodes = (e: HTMLElement, content: string, before: string, after: string) => {
     const nodes = e.children[0];
 
     let recurringTextFromLines = '';
@@ -274,31 +311,39 @@ const Home: FunctionalComponent = () => {
 
       for (let j = 0; j < e.children.length; j++) {
         recurringTextFromLines += (e.children[j] as any).innerText;
+
         recurringTextFromLinesArray.push(e.children[j]);
       }
-      if (recurringTextFromLines.includes(string.replace(/(\r\n|\n|\r)/gm, '').replace(/\s*$/g, ''))) {
-        for (let item of nodes.children as any) {
-          item.textContent = '';
-        }
 
-        const arr = recurringTextFromLines.split(string.replace(/(\r\n|\n|\r)/gm, ''));
-
-        const span1 = document.createElement('span');
-        span1.textContent = before;
-
-        const span2 = document.createElement('span');
-        span2.textContent = string;
-
-        const span3 = document.createElement('span');
-        span3.textContent = after;
-        e.appendChild(span1);
-        e.appendChild(span2);
-        span2.id = 'search-term';
-        span2.setAttribute('style', 'background-color:crimson');
-        e.appendChild(span3);
-        prism.highlightElement(span1);
-        prism.highlightElement(span3);
+      console.log('recurringTextFromLines1', recurringTextFromLines.replace(/(\r\n|\n|\r)/gm, ''));
+      console.log('recurringTextFromLines2', content.replace(/(\r\n|\n|\r)/gm, '').replace(/\s*$/g, ''));
+      console.log('recurringTextFromLines', recurringTextFromLines.replace(/\s*$/g, '').includes(content.replace(/(\r\n|\n|\r)/gm, '')));
+      for (let item of nodes.children as any) {
+        item.textContent = '';
       }
+
+      // const arr = recurringTextFromLines.split(content.replace(/(\r\n|\n|\r)/gm, ''));
+
+      const span1 = document.createElement('span');
+      span1.textContent = before;
+
+      const span2 = document.createElement('span');
+      console.log('span2', content.includes('\n'));
+      span2.textContent = content;
+
+      const span3 = document.createElement('span');
+      if (code.slice(-1) === '\n') {
+        span3.textContent = after + '\n';
+      } else {
+        span3.textContent = after;
+      }
+      e.appendChild(span1);
+      e.appendChild(span2);
+      span2.id = 'search-term';
+      span2.setAttribute('style', 'background-color:crimson');
+      e.appendChild(span3);
+      prism.highlightElement(span1);
+      prism.highlightElement(span3);
     }
   };
 
@@ -307,14 +352,20 @@ const Home: FunctionalComponent = () => {
     const annotation = annotations.find(a => a.index === index) as annotationType;
 
     const content = annotation.content;
+    console.log('mouseover', annotation);
+
     const before = annotation.beforeContent;
     const after = annotation.afterContent;
+    console.log('content', annotation);
+    if (annotation.content.slice(-1) === '\n') {
+      console.log('content last!');
+    }
 
     const d = document.getElementById('content-block') as HTMLElement;
     highlightNodes(d, content, before, after);
   };
 
-  function removeChildren(elem: any) {
+  const removeChildren = (elem: any) => {
     while (elem.hasChildNodes()) {
       if (elem.id === 'search-term') {
         elem.removeAttribute('style');
@@ -325,7 +376,7 @@ const Home: FunctionalComponent = () => {
     }
 
     setCode('');
-  }
+  };
 
   const onMouseLeave = (e: any) => {
     setCode('');
