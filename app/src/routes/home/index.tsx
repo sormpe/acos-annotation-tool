@@ -18,6 +18,10 @@ const Home: FunctionalComponent = () => {
     locIndex: number;
   };
 
+  const [name, setName] = useState<string>('default');
+  const [code, setCode] = useState<string>('');
+  const [textvalue, setTextvalue] = useState<string>('');
+
   const jsonValue = [
     {
       language: ''
@@ -31,9 +35,6 @@ const Home: FunctionalComponent = () => {
     }
   ];
 
-  const [code, setCode] = useState<string>('');
-  const [textvalue, setTextvalue] = useState<string>('');
-
   const [rstResult, setRstResult] = useState<string>('');
   const [jsonResult, setJsonResult] = useState<object>(jsonValue);
   const [annotations, setAnnotations] = useState<annotationType[] | []>([]);
@@ -41,6 +42,7 @@ const Home: FunctionalComponent = () => {
 
   useEffect(() => {
     restructurify();
+    console.log('updating!');
     updateAnnotationsWithEvent(textvalue);
   }, [textvalue, code, annotations, syntaxHighlight]);
 
@@ -128,6 +130,8 @@ const Home: FunctionalComponent = () => {
 
     json[2].annotations = [];
     (annotations as annotationType[]).map((annotation: annotationType, idx: any) => {
+      console.log('restructurify', annotation.locIndex);
+
       json[2].annotations.push({
         index: json[2].annotations.length + 1,
         content: annotation.content,
@@ -245,7 +249,7 @@ const Home: FunctionalComponent = () => {
 
   const copyJsonToClipboard = () => {
     const el = document.createElement('textarea');
-    el.value = JSON.stringify(jsonResult, null, 2);
+    el.value = name + ': ' + JSON.stringify(jsonResult, null, 2);
     document.body.appendChild(el);
     el.select();
     document.execCommand('copy');
@@ -253,13 +257,11 @@ const Home: FunctionalComponent = () => {
   };
 
   const updateAnnotationsWithEvent = (e: any) => {
-    console.log('updateAnnotationsWithEvent');
+    console.log('updateAnnotationsWithEvent', e);
+
     if (annotations.length > 0) {
       for (let annotation of annotations as any) {
-        const from = e.indexOf(annotation.index + '«') - (annotation.index - 1) * 3;
-
-        console.log('from');
-        updateAnnotations({
+        const object = {
           index: annotation.index,
           // prettier-ignore
           content: e.split(annotation.index + '«')[1].split('»')[0].replace(/[0-9]+«/g, '').replace(/»/g, ''),
@@ -274,8 +276,23 @@ const Home: FunctionalComponent = () => {
             .replace(/[0-9]+«/g, '')
             .replace(/»/g, ''),
           annotation: annotation.annotation,
-          locIndex: from
-        });
+          locIndex: annotation.locIndex
+        };
+
+        // updates when nested annotations exist
+        // TODO: update these correctly when textvalue changes
+        object.content = annotation.pureContent.replace(/[0-9]+«/g, '').replace(/»/g, '');
+
+        if (code.split(annotation.pureContent)[1]) {
+          object.afterContent = code
+            .split(annotation.pureContent)[1]
+            .replace(/[0-9]+«/g, '')
+            .replace(/»/g, '');
+        } else {
+          object.afterContent = '';
+        }
+
+        updateAnnotations(object);
       }
     }
   };
@@ -301,6 +318,8 @@ const Home: FunctionalComponent = () => {
   };
 
   const highlightNodes = (e: HTMLElement, content: string, before: string, after: string) => {
+    console.log('span2.textContent1', content);
+
     const nodes = e.children[0];
 
     let recurringTextFromLines = '';
@@ -314,10 +333,11 @@ const Home: FunctionalComponent = () => {
 
         recurringTextFromLinesArray.push(e.children[j]);
       }
-
+      /*
       console.log('recurringTextFromLines1', recurringTextFromLines.replace(/(\r\n|\n|\r)/gm, ''));
       console.log('recurringTextFromLines2', content.replace(/(\r\n|\n|\r)/gm, '').replace(/\s*$/g, ''));
       console.log('recurringTextFromLines', recurringTextFromLines.replace(/\s*$/g, '').includes(content.replace(/(\r\n|\n|\r)/gm, '')));
+      */
       for (let item of nodes.children as any) {
         item.textContent = '';
       }
@@ -329,6 +349,8 @@ const Home: FunctionalComponent = () => {
 
       const span2 = document.createElement('span');
       console.log('span2', content.includes('\n'));
+      console.log('span2.textContent', content);
+
       span2.textContent = content;
 
       const span3 = document.createElement('span');
@@ -400,6 +422,11 @@ const Home: FunctionalComponent = () => {
     }
   };
 
+  const onReset = (e: any) => {
+    setTextvalue(textvalue.replace(/[0-9]+«/g, '').replace(/»/g, ''));
+    setAnnotations([]);
+  };
+
   const listAnnotations = (annotations as annotationType[]).map(a => {
     const annotation = annotations.find(x => x.index === a.index) as annotationType;
 
@@ -448,9 +475,16 @@ const Home: FunctionalComponent = () => {
     <div class={style.home}>
       <div class={style.leftside}>
         <div>
+          <input value={name} onInput={(e: any) => setName(e.target.value)}></input>
+        </div>
+
+        <div>
           <select id="syntax-highlight-input" name="highlight" onInput={handleHighLightChange}>
             {highlightValues}
           </select>
+          <div style="float: right">
+            <button onClick={onReset}>Reset</button>
+          </div>
         </div>
         <pre>
           <code>
@@ -476,7 +510,9 @@ const Home: FunctionalComponent = () => {
           {jsonResult ? (
             <div>
               <h4>Json</h4>
-              <pre>{JSON.stringify(jsonResult, null, 2)}</pre>
+              <pre>
+                {name}: {JSON.stringify(jsonResult, null, 2)}
+              </pre>
               <button onClick={copyJsonToClipboard}>Copy</button>
             </div>
           ) : null}
