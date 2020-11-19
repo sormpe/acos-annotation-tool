@@ -637,6 +637,7 @@ const Home: FunctionalComponent = () => {
           value={textvalue}
           onLoad={instance => setInstance(instance)}
           mode={syntaxHighlight}
+          wrapEnabled={true}
           theme="monokai"
           onChange={handleChangeAce}
           name="ace_div"
