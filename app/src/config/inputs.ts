@@ -1,5 +1,5 @@
 export enum InputValues {
-  'plain' = 'plain',
+  'plain_text' = 'plain_text',
   'javascript' = 'javascript',
   'python' = 'python',
   'css' = 'css',
