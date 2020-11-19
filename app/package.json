@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "build": "preact build",
+    "build": "preact build --dest build/code-annotation-tool --no-prerender",
     "serve": "sirv build --port 8080 --cors --single",
     "dev": "preact watch",
     "lint": "eslint 'src/**/*.{js,jsx,ts,tsx}'",
@@ -23,16 +23,27 @@
     "build/*"
   ],
   "dependencies": {
+    "@types/draft-js": "^0.10.44",
     "@types/prismjs": "^1.16.1",
+    "@uiw/react-codemirror": "^3.0.1",
+    "ace-builds": "^1.4.12",
+    "autoprefixer": "^9.8.6",
+    "brace": "^0.11.1",
+    "draft-js": "^0.11.7",
+    "html-react-parser": "^0.14.1",
+    "postcss": "^7.0.35",
     "preact": "^10.3.1",
     "preact-jsx-chai": "^3.0.0",
     "preact-markup": "^2.0.0",
     "preact-render-to-string": "^5.1.4",
     "preact-router": "^3.2.1",
     "prism-react-renderer": "^1.1.1",
-    "prismjs": "^1.21.0"
+    "prismjs": "^1.21.0",
+    "react-ace": "^9.2.0",
+    "tailwindcss": "^1.9.6"
   },
   "devDependencies": {
+    "@fullhuman/postcss-purgecss": "^3.0.0",
     "@teamsupercell/typings-for-css-modules-loader": "^2.2.0",
     "@types/enzyme": "^3.10.5",
     "@types/jest": "^26.0.8",
