@@ -1,5 +1,5 @@
 import { FunctionalComponent, h } from 'preact';
-import { Route, Router, RouterOnChangeArgs } from 'preact-router';
+import { Route, Router, RouterOnChangeArgs, route } from 'preact-router';
 
 import Home from '../routes/home';
 import About from '../routes/about';
@@ -17,10 +17,10 @@ const App: FunctionalComponent = () => {
     <div id="app">
       <Header />
       <Router onChange={handleRoute}>
-        <Route path="/" component={Home} />
-        <Route path="/about" component={About} />
+        <Route path="/code-annotation-tool/" component={Home} />
+        <Route path="/code-annotation-tool/about" component={About} />
 
-        <Route path="/profile/" component={Profile} user="me" />
+        <Route path="profile/" component={Profile} user="me" />
         <Route path="/profile/:user" component={Profile} />
         <NotFoundPage default />
       </Router>

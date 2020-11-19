@@ -7,10 +7,10 @@ const Header: FunctionalComponent = () => {
     <header class={style.header}>
       <h1>Code annotation tool</h1>
       <nav>
-        <Link activeClassName={style.active} href="/">
+        <Link activeClassName={style.active} href="/code-annotation-tool/">
           Tool
         </Link>
-        <Link activeClassName={style.active} href="/about">
+        <Link activeClassName={style.active} href="/code-annotation-tool/about">
           About
         </Link>
         {/* 
