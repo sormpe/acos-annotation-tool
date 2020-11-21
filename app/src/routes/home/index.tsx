@@ -655,7 +655,7 @@ const Home: FunctionalComponent = () => {
         {showPreview ? (
           <div>
             <nav class="relative flex items-center justify-between sm:h-12 lg:justify-start bg-blue-200">
-              <span class="hidden sm:block ml-3">
+              <span class="hidden sm:block">
                 <button
                   onClick={() => setShowPreview(!showPreview)}
                   type="button"
@@ -702,7 +702,7 @@ const Home: FunctionalComponent = () => {
         ) : (
           <div>
             <nav class="relative flex items-center justify-between sm:h-12 lg:justify-start bg-blue-200">
-              <span class="hidden sm:block ml-3">
+              <span class="hidden sm:block">
                 <button
                   onClick={() => setShowPreview(!showPreview)}
                   type="button"
