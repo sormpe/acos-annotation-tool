@@ -690,7 +690,7 @@ const Home: FunctionalComponent = () => {
                 if (annotations.length > 0) {
                   return (
                     <div id={'annotation-for-' + a.index.toString()} class={style.annotation} onMouseOver={onMouseOver} onMouseLeave={onMouseLeave}>
-                      {a ? parse(a.annotation) : 'waiting...'} <hr />
+                      {a ? parse(a.annotation) : 'waiting...'}
                     </div>
                   );
                 } else {
