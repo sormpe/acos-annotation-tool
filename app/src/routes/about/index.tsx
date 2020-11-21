@@ -1,15 +1,6 @@
 import { FunctionalComponent, h } from 'preact';
-import { useEffect, useState, useRef } from 'preact/hooks';
 
-import { Link } from 'preact-router/match';
 import * as style from './style.css';
-
-import SplitPane from 'react-split-pane';
-
-
-import 'react-reflex/styles.css';
-
-import { ReflexContainer, ReflexSplitter, ReflexElement } from 'react-reflex';
 
 const About: FunctionalComponent = () => {
   return (
