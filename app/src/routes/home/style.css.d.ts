@@ -6,6 +6,7 @@ declare namespace StyleCssNamespace {
     home: string;
     leftside: string;
     preview: string;
+    resizer: string;
     rightside: string;
     rightside2: string;
     'text-area': string;
