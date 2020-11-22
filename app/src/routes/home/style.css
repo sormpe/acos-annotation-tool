@@ -1,11 +1,9 @@
 .home {
-  min-height: 100%;
-  width: 100%;
-  display: flex;
   margin-top: 56px;
+  min-height: 100%;
   max-width: 100%;
 
-  @apply h-64 w-full flex;
+  @apply w-full flex;
 }
 
 #preview {
@@ -13,6 +11,7 @@
   margin-right: 3em;
   max-width: 40em;
   overflow: auto;
+  margin-top: 1em;
 }
 
 #codeblock {
@@ -50,7 +49,8 @@
   width: 100%;
   background-color: #272727;
   padding: 2em;
-  min-width: 20%;
+  min-width: 35%;
+  min-height: 100%;
 
   @apply flex w-2/4;
 }
@@ -96,7 +96,6 @@
 
 .resizer {
   cursor: ew-resize;
-  height: 100%;
   width: 7px;
 
   @apply bg-blue-200;

@@ -63,6 +63,7 @@ const Home: FunctionalComponent = () => {
   useEffect(() => {
     // Query the element
     resizer = document.getElementById('dragMe') as any;
+    console.log('resizer');
 
     leftSide = resizer.previousElementSibling;
     rightSide = resizer.nextElementSibling;
@@ -124,6 +125,12 @@ const Home: FunctionalComponent = () => {
   useEffect(() => {
     restructurify();
     updateAnnotationsWithEvent(textvalue);
+
+    resizer = document.getElementById('dragMe') as any;
+    const right = document.getElementById('dragMe') as any;
+
+    console.log('right', right.offsetHeight);
+    // resizer.style.height = '100%';
   }, [textvalue, code, annotations, syntaxHighlight]);
 
   function getSelectedTextRangeAce(code: any, codeToAnnotate: any) {
@@ -616,45 +623,45 @@ const Home: FunctionalComponent = () => {
               Reset
             </button>
           </div>
-        </div>
-        {/*
+          {/*
         <pre>
           <code>
             <textarea onKeyDown={handleKeyDown} value={textvalue} class={style['text-area']} id="code-to-annotate" onInput={handleChange} />
           </code>
         </pre>
         */}
-        <AceEditor
-          value={textvalue}
-          onLoad={instance => setInstance(instance)}
-          mode={syntaxHighlight}
-          wrapEnabled={true}
-          theme="monokai"
-          onChange={handleChangeAce}
-          name="ace_div"
-          fontSize={16}
-          style={{ width: '100%', height: '22em', marginBottom: '1em', border: '1px solid grey' }}
-          editorProps={{ $blockScrolling: true }}
-        />
+          <AceEditor
+            value={textvalue}
+            onLoad={instance => setInstance(instance)}
+            mode={syntaxHighlight}
+            wrapEnabled={true}
+            theme="monokai"
+            onChange={handleChangeAce}
+            name="ace_div"
+            fontSize={16}
+            style={{ width: '100%', height: '24rem', marginBottom: '1em', border: '1px solid grey' }}
+            editorProps={{ $blockScrolling: false }}
+          />
 
-        <button
-          onClick={addAnnotation}
-          id="add-annotation-button"
-          type="button"
-          class="border border-gray-200 bg-gray-200 text-gray-700 rounded-md px-4 py-2 m-2 transition duration-500 ease select-none hover:bg-gray-300 focus:outline-none focus:shadow-outline"
-        >
-          Add annotation
-        </button>
+          <button
+            onClick={addAnnotation}
+            id="add-annotation-button"
+            type="button"
+            class="border border-gray-200 bg-gray-200 text-gray-700 rounded-md px-4 py-2 m-2 transition duration-500 ease select-none hover:bg-gray-300 focus:outline-none focus:shadow-outline"
+          >
+            Add annotation
+          </button>
 
-        <ol id="annotation-list">{listAnnotations}</ol>
+          <ol id="annotation-list">{listAnnotations}</ol>
+        </div>
       </div>
 
-      <div class={style.resizer} id="dragMe"></div>
+      <div class={style.resizer} id="dragMe" />
 
       <div id={'right'} class={style.rightside}>
         {showPreview ? (
           <div>
-            <nav class="relative flex items-center justify-between sm:h-12 lg:justify-start bg-blue-200">
+            <nav class="relative flex items-center justify-between sm:h-12 bg-blue-200">
               <span class="hidden sm:block">
                 <button
                   onClick={() => setShowPreview(!showPreview)}
@@ -664,26 +671,26 @@ const Home: FunctionalComponent = () => {
                   View RST and JSON
                 </button>
               </span>
+              <div>
+                <button
+                  onClick={copyRstToClipboard}
+                  class="border border-blue-900 bg-blue-900 text-white rounded-md px-4 py-2 m-2 transition duration-500 ease select-none hover:bg-blue-900 focus:outline-none focus:shadow-outline"
+                >
+                  Copy RST
+                </button>
+                <button
+                  onClick={copyJsonToClipboard}
+                  class="border border-blue-900 bg-blue-900 text-white rounded-md px-4 py-2 m-2 transition duration-500 ease select-none hover:bg-blue-900 focus:outline-none focus:shadow-outline"
+                >
+                  Copy JSON
+                </button>
+              </div>
             </nav>
 
             <div id={style.codeblock} class="p-2">
               {code && (
                 <div>
                   <CodeBlock code={code} language={syntaxHighlight} />
-                  <div>
-                    <button
-                      onClick={copyRstToClipboard}
-                      class="border border-blue-900 bg-blue-900 text-white rounded-md px-4 py-2 m-2 transition duration-500 ease select-none hover:bg-blue-900 focus:outline-none focus:shadow-outline"
-                    >
-                      Copy RST
-                    </button>
-                    <button
-                      onClick={copyJsonToClipboard}
-                      class="border border-blue-900 bg-blue-900 text-white rounded-md px-4 py-2 m-2 transition duration-500 ease select-none hover:bg-blue-900 focus:outline-none focus:shadow-outline"
-                    >
-                      Copy JSON
-                    </button>
-                  </div>
                 </div>
               )}
               {(annotations as annotationType[]).map(a => {
@@ -716,8 +723,8 @@ const Home: FunctionalComponent = () => {
             <div id={style.preview}>
               {rstResult ? (
                 <div>
-                  <h4>Rst</h4>
-                  <div id="preview-rst">
+                  <h2>Rst</h2>
+                  <div class="mt-3" id="preview-rst">
                     <pre>{rstResult}</pre>
                   </div>
                   <button
@@ -728,10 +735,11 @@ const Home: FunctionalComponent = () => {
                   </button>
                 </div>
               ) : null}
+              <hr />
               {jsonResult ? (
-                <div>
-                  <h4>Json</h4>
-                  <div id="preview-json">
+                <div class="mt-3">
+                  <h2>Json</h2>
+                  <div class="mt-3" id="preview-json">
                     <pre>
                       {name}: {JSON.stringify(jsonResult, null, 2)}
                     </pre>
