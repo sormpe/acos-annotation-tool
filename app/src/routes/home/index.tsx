@@ -193,7 +193,7 @@ const Home: FunctionalComponent = () => {
       beforeContent: beforeAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''),
       afterContent: afterAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''),
       annotation: '',
-      locIndex: from - annotations.length * 4
+      locIndex: from - (beforeAnnotation.match(/«/g) || []).length * 2 - (beforeAnnotation.match(/»/g) || []).length * 2
     });
   };
 
