@@ -63,7 +63,6 @@ const Home: FunctionalComponent = () => {
   useEffect(() => {
     // Query the element
     resizer = document.getElementById('dragMe') as any;
-    console.log('resizer');
 
     leftSide = resizer.previousElementSibling;
     rightSide = resizer.nextElementSibling;
@@ -125,12 +124,6 @@ const Home: FunctionalComponent = () => {
   useEffect(() => {
     restructurify();
     updateAnnotationsWithEvent(textvalue);
-
-    resizer = document.getElementById('dragMe') as any;
-    const right = document.getElementById('dragMe') as any;
-
-    console.log('right', right.offsetHeight);
-    // resizer.style.height = '100%';
   }, [textvalue, code, annotations, syntaxHighlight]);
 
   function getSelectedTextRangeAce(code: any, codeToAnnotate: any) {
@@ -192,7 +185,6 @@ const Home: FunctionalComponent = () => {
 
     instance.setValue(modifiedCode);
 
-    const b = beforeAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, '');
     updateAnnotations({
       index: index,
       // prettier-ignore
@@ -201,7 +193,7 @@ const Home: FunctionalComponent = () => {
       beforeContent: beforeAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''),
       afterContent: afterAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''),
       annotation: '',
-      locIndex: code.indexOf(selection.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''))
+      locIndex: from - annotations.length * 4
     });
   };
 
