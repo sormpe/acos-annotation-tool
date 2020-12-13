@@ -23,12 +23,12 @@ import { InputValues } from '../../config/inputs';
 const Home: FunctionalComponent = () => {
   type annotationType = {
     index: number;
-    content: any;
-    pureContent: any;
-    beforeContent: any;
-    afterContent: any;
+    content: string[];
+    pureContent: string[];
+    beforeContent: string[];
+    afterContent: string[];
     annotation: string;
-    locIndex: number;
+    locIndex: number[];
   };
 
   const [name, setName] = useState<string>('default');
@@ -54,6 +54,9 @@ const Home: FunctionalComponent = () => {
   const [syntaxHighlight, setSyntaxHighlight] = useState<string>('plain_text');
 
   const [showPreview, setShowPreview] = useState(true);
+
+  const [instance, setInstance] = useState<any | null>(null);
+  const [multipleCoords, setMultipleCoords] = useState<any[]>([]);
 
   let resizer: any;
 
@@ -123,8 +126,11 @@ const Home: FunctionalComponent = () => {
 
   useEffect(() => {
     restructurify();
-    updateAnnotationsWithEvent(textvalue);
-  }, [textvalue, code, annotations, syntaxHighlight]);
+
+    updateAnnotationsWithEvent(textvalue, annotations);
+  }, [code, textvalue, annotations, syntaxHighlight]);
+
+  useEffect(() => {}, [multipleCoords]);
 
   function getSelectedTextRangeAce(code: any, codeToAnnotate: any) {
     const from = code.indexOf(codeToAnnotate) as number;
@@ -132,10 +138,9 @@ const Home: FunctionalComponent = () => {
     return { from, to };
   }
 
-  const [instance, setInstance] = useState<any | null>(null);
-  const addAnnotation = () => {
+  const getCoords = (selectionRange: any) => {
     var lines = instance.getSession().doc.getAllLines(),
-      range = instance.getSelectionRange(),
+      range = selectionRange,
       i,
       n1,
       n2,
@@ -163,8 +168,6 @@ const Home: FunctionalComponent = () => {
       selectionEnd: selectionEnd
     };
 
-    const codeToAnnotate = instance.getValue();
-
     let { from, to } = getSelectedTextRangeAce(textvalue, instance.getSelectedText());
     to = result.selectionEnd;
 
@@ -172,29 +175,92 @@ const Home: FunctionalComponent = () => {
       from = result.selectionStart;
     }
 
-    const selection = codeToAnnotate.substring(from, to);
+    const r: any = { from, to };
+    return r;
+  };
 
-    const beforeAnnotation = codeToAnnotate.substring(0, from);
+  const addAnnotation = () => {
+    if (instance.selection.rangeList.ranges.length > 0) {
+      const index = annotations.length + 1;
 
-    const afterAnnotation = codeToAnnotate.substring(to, code.length + annotations.length * 4);
+      const contents = [];
+      const pureContents = [];
+      const beforeAnnotations = [];
+      const afterAnnotations = [];
+      const locIndexes = [];
+      let modifiedCode = textvalue;
 
-    const index = annotations.length + 1;
-    const modifiedCode = replaceAt(from, to, index + '«' + selection + '»' + index, textvalue);
+      for (let i = 0; i < instance.selection.rangeList.ranges.length; i++) {
+        const { from, to } = getCoords(instance.selection.rangeList.ranges[i]);
+        let afterEnd = code.length + annotations.length * 4;
 
-    setTextvalue(modifiedCode);
+        if (instance.selection.rangeList.ranges[i + 1]) {
+          const { from, to } = getCoords(instance.selection.rangeList.ranges[i + 1]);
 
-    instance.setValue(modifiedCode);
+          afterEnd = from;
+        }
 
-    updateAnnotations({
-      index: index,
-      // prettier-ignore
-      content: selection.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''),
-      pureContent: selection,
-      beforeContent: beforeAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''),
-      afterContent: afterAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''),
-      annotation: '',
-      locIndex: from - (beforeAnnotation.match(/«/g) || []).length * 2 - (beforeAnnotation.match(/»/g) || []).length * 2
-    });
+        const codeToAnnotate = instance.getValue();
+
+        const selection = codeToAnnotate.substring(from, to);
+        const content = selection.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, '');
+        contents.push(content);
+        pureContents.push(selection);
+
+        const beforeAnnotation = codeToAnnotate.substring(0, from);
+        beforeAnnotations.push(beforeAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
+
+        const afterAnnotation = codeToAnnotate.substring(to, afterEnd);
+        afterAnnotations.push(afterAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
+
+        const locIndex = from - (beforeAnnotation.match(/«/g) || []).length * 2 - (beforeAnnotation.match(/»/g) || []).length * 2;
+        locIndexes.push(locIndex);
+
+        modifiedCode = replaceAt(from + i * 4, to + i * 4, index + '«' + selection + '»' + index, modifiedCode);
+      }
+
+      setTextvalue(modifiedCode);
+
+      updateAnnotations({
+        index: index,
+        // prettier-ignore
+        content: contents,
+        pureContent: pureContents,
+        beforeContent: beforeAnnotations,
+        afterContent: afterAnnotations,
+        annotation: '',
+        locIndex: locIndexes
+      });
+
+      // instance.setValue(modifiedCode);
+    } else {
+      const { from, to } = getCoords(instance.getSelectionRange());
+      const codeToAnnotate = instance.getValue();
+
+      const selection = codeToAnnotate.substring(from, to);
+
+      const beforeAnnotation = codeToAnnotate.substring(0, from);
+
+      const afterAnnotation = codeToAnnotate.substring(to, textvalue.length);
+
+      const index = annotations.length + 1;
+      const modifiedCode = replaceAt(from, to, index + '«' + selection + '»' + index, textvalue);
+
+      setTextvalue(modifiedCode);
+
+      // instance.setValue(modifiedCode);
+
+      updateAnnotations({
+        index: index,
+        // prettier-ignore
+        content: [selection.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, '')],
+        pureContent: [selection],
+        beforeContent: [beforeAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, '')],
+        afterContent: [afterAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, '')],
+        annotation: '',
+        locIndex: [from - (beforeAnnotation.match(/«/g) || []).length * 2 - (beforeAnnotation.match(/»/g) || []).length * 2]
+      });
+    }
   };
 
   const replaceAt = (from: number, to: number, replacement: string, value: string) => {
@@ -212,12 +278,10 @@ const Home: FunctionalComponent = () => {
   };
 
   const restructurify = () => {
-    // const codeToAnnotate = document.getElementById('code-to-annotate') as HTMLInputElement;
-
     let rst = '';
     rst += '.. annotated::\n';
     rst += '\t.. code-block:: ' + syntaxHighlight + '\n\n';
-    rst += tabify(textvalue);
+    rst += tabify(textvalue.replace(/»+[0-9]/g, '»'));
     rst += '\n\n';
 
     (annotations as annotationType[]).map((annotation: annotationType, idx: any) => {
@@ -235,25 +299,26 @@ const Home: FunctionalComponent = () => {
         index: json[2].annotations.length + 1,
         content: annotation.content,
         annotation: annotation.annotation,
-        locIndex: annotation.locIndex
+        locIndices: annotation.locIndex
       });
     });
 
     setRstResult(rst);
     setJsonResult(json);
-
-    const codeOutput = document.getElementById('code-output') as any;
   };
 
   const removeAnnotation = (e: any, index: number) => {
     const idx = Number(e.target.getAttribute('data-index'));
-    const removedAnnoation = annotations.find(a => a.index === index) as annotationType;
+    const annotationToBeRemoved = annotations.find(a => a.index === index) as annotationType;
     const splicedAnnotations = annotations.filter(item => item.index !== idx);
 
-    const coords = textvalue.indexOf(index + '«' + removedAnnoation.content + '»' + index);
+    let modifiedCode = textvalue;
+    for (let c of annotationToBeRemoved.pureContent) {
+      const coords = modifiedCode.indexOf(index + '«' + c + '»' + index);
+      const newTextValue = modifiedCode.substring(coords + 2, coords + c.length + 2);
 
-    const newTextValue = textvalue.substring(coords + 2, coords + removedAnnoation.content.length + 2);
-    const modifiedCode = replaceAt(coords, coords + removedAnnoation.content.length + 4, newTextValue, textvalue);
+      modifiedCode = replaceAt(coords, coords + c.length + 4, newTextValue, modifiedCode);
+    }
 
     setTextvalue(modifiedCode);
     instance.setValue(modifiedCode);
@@ -270,30 +335,42 @@ const Home: FunctionalComponent = () => {
     annotations[index - 1] = { ...belowAnnotation, index: annotation.index };
     annotations[index] = { ...annotation, index: belowAnnotation.index };
 
-    const firstCoords = textvalue.indexOf(index + '«' + annotation.pureContent + '»');
-    const secondCoords = textvalue.indexOf(index + 1 + '«' + belowAnnotation.pureContent + '»');
+    const originalTextvalue = textvalue;
+    let modifiedCode = textvalue;
 
-    const newTextValue = textvalue.substring(firstCoords + 1, firstCoords + annotation.pureContent.length + 3);
-    let modifiedCode = replaceAt(
-      firstCoords,
-      firstCoords + annotation.pureContent.length + 4,
-      belowAnnotation.index + newTextValue + belowAnnotation.index,
-      textvalue
-    );
+    const loopLength = annotation.content.length > belowAnnotation.content.length ? annotation.content.length : belowAnnotation.content.length;
 
-    const secondnewTextValue = modifiedCode.substring(secondCoords + 1, secondCoords + belowAnnotation.pureContent.length + 3);
+    for (let c = 0; c < loopLength; c++) {
+      if (annotation.pureContent[c]) {
+        const firstCoords = originalTextvalue.indexOf(index + '«' + annotation.pureContent[c] + '»');
 
-    modifiedCode = replaceAt(
-      secondCoords,
-      secondCoords + belowAnnotation.pureContent.length + 4,
-      annotation.index + secondnewTextValue + annotation.index,
-      modifiedCode
-    );
+        const newTextValue = modifiedCode.substring(firstCoords + 1, firstCoords + annotation.pureContent[c].length + 3);
+        modifiedCode = replaceAt(
+          firstCoords,
+          firstCoords + annotation.pureContent[c].length + 4,
+          belowAnnotation.index + newTextValue + belowAnnotation.index,
+          modifiedCode
+        );
+      }
+
+      if (belowAnnotation.pureContent[c]) {
+        const secondCoords = originalTextvalue.indexOf(index + 1 + '«' + belowAnnotation.pureContent[c] + '»');
+        const secondNewTextValue = modifiedCode.substring(secondCoords + 1, secondCoords + belowAnnotation.pureContent[c].length + 3);
+
+        modifiedCode = replaceAt(
+          secondCoords,
+          secondCoords + belowAnnotation.pureContent[c].length + 4,
+          annotation.index + secondNewTextValue + annotation.index,
+          modifiedCode
+        );
+      }
+    }
 
     setTextvalue(modifiedCode);
     instance.setValue(modifiedCode);
 
     setAnnotations(annotations);
+
     restructurify();
   };
 
@@ -303,29 +380,39 @@ const Home: FunctionalComponent = () => {
     const aboveAnnotation = annotations[index - 2];
     const annotation = annotations[index - 1];
 
-    annotations[index - 2] = { ...annotation, index: aboveAnnotation.index };
     annotations[index - 1] = { ...aboveAnnotation, index: annotation.index };
+    annotations[index - 2] = { ...annotation, index: aboveAnnotation.index };
 
-    const firstCoords = textvalue.indexOf(index + '«' + annotation.pureContent + '»');
-    const secondCoords = textvalue.indexOf(index - 1 + '«' + aboveAnnotation.pureContent + '»');
+    const originalTextvalue = textvalue;
+    let modifiedCode = textvalue;
 
-    const newTextValue = textvalue.substring(firstCoords + 1, firstCoords + annotation.pureContent.length + 3);
+    const loopLength = annotation.content.length > aboveAnnotation.content.length ? annotation.content.length : aboveAnnotation.content.length;
 
-    let modifiedCode = replaceAt(
-      firstCoords,
-      firstCoords + annotation.pureContent.length + 4,
-      aboveAnnotation.index + newTextValue + aboveAnnotation.index,
-      textvalue
-    );
+    for (let c = 0; c < loopLength; c++) {
+      if (annotation.pureContent[c]) {
+        const firstCoords = originalTextvalue.indexOf(index + '«' + annotation.pureContent[c] + '»');
+        const newTextValue = modifiedCode.substring(firstCoords + 1, firstCoords + annotation.pureContent[c].length + 3);
 
-    const secondnewTextValue = modifiedCode.substring(secondCoords + 1, secondCoords + aboveAnnotation.pureContent.length + 3);
+        modifiedCode = replaceAt(
+          firstCoords,
+          firstCoords + annotation.pureContent[c].length + 4,
+          aboveAnnotation.index + newTextValue + aboveAnnotation.index,
+          modifiedCode
+        );
+      }
 
-    modifiedCode = replaceAt(
-      secondCoords,
-      secondCoords + aboveAnnotation.pureContent.length + 4,
-      annotation.index + secondnewTextValue + annotation.index,
-      modifiedCode
-    );
+      if (aboveAnnotation.pureContent[c]) {
+        const secondCoords = originalTextvalue.indexOf(index - 1 + '«' + aboveAnnotation.pureContent[c] + '»');
+        const secondNewTextValue = modifiedCode.substring(secondCoords + 1, secondCoords + aboveAnnotation.pureContent[c].length + 3);
+
+        modifiedCode = replaceAt(
+          secondCoords,
+          secondCoords + aboveAnnotation.pureContent[c].length + 4,
+          annotation.index + secondNewTextValue + annotation.index,
+          modifiedCode
+        );
+      }
+    }
 
     setTextvalue(modifiedCode);
     instance.setValue(modifiedCode);
@@ -366,27 +453,69 @@ const Home: FunctionalComponent = () => {
     document.body.removeChild(el);
   };
 
-  const updateAnnotationsWithEvent = (e: any) => {
+  const updateAnnotationsWithEvent = (e: any, annotations: annotationType[]) => {
     if (annotations.length > 0) {
       for (let annotation of annotations as any) {
         if (e.split(annotation.index + '«')[1]) {
-          updateAnnotations({
-            index: annotation.index,
-            // prettier-ignore
-            content: e.split(annotation.index + '«')[1].split('»' + annotation.index)[0].replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''),
-            pureContent: e.split(annotation.index + '«')[1].split('»' + annotation.index)[0],
-            beforeContent: e
-              .split(annotation.index + '«')[0]
-              .replace(/[0-9]+«/g, '')
-              .replace(/»+[0-9]/g, ''),
-            afterContent: e
-              .split(annotation.index + '«')[1]
-              .split('»' + annotation.index)[1]
-              .replace(/[0-9]+«/g, '')
-              .replace(/»+[0-9]/g, ''),
-            annotation: annotation.annotation,
-            locIndex: annotation.locIndex
-          });
+          for (let i = 0; i < annotations.length; i++) {
+            const contents = [];
+            const pureContents = [];
+            const beforeContents = [];
+            const afterContents = [];
+            const locIndexes = [];
+
+            const idx = annotation.index;
+            const startRegexp = new RegExp(idx + '«', 'g');
+            let startregex = startRegexp,
+              startresult,
+              startIndices = [];
+            while ((startresult = startregex.exec(e))) {
+              startIndices.push(startresult.index);
+            }
+
+            const endRegexp = new RegExp('»' + idx, 'g');
+            let regex = endRegexp,
+              result,
+              endIndices = [];
+            while ((result = regex.exec(e))) {
+              endIndices.push(result.index);
+            }
+
+            for (let f = 0; f < startIndices.length; f++) {
+              contents.push(
+                e
+                  .substring(startIndices[f] + 2, endIndices[f])
+                  .replace(/[0-9]+«/g, '')
+                  .replace(/»+[0-9]/g, '')
+              );
+              pureContents.push(e.substring(startIndices[f] + 2, endIndices[f]));
+
+              beforeContents.push(
+                e
+                  .substring(endIndices[f - 1] + 2, startIndices[f])
+                  .replace(/[0-9]+«/g, '')
+                  .replace(/»+[0-9]/g, '')
+              );
+
+              const nextAnno = e.substring(endIndices[f] + 2, e.length).split(idx + '«')[0];
+
+              afterContents.push(nextAnno.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
+            }
+            for (let f of pureContents) {
+              locIndexes.push(e.indexOf(f));
+            }
+
+            updateAnnotations({
+              index: annotation.index,
+              // prettier-ignore
+              content: contents,
+              pureContent: pureContents,
+              beforeContent: beforeContents,
+              afterContent: afterContents,
+              annotation: annotation.annotation,
+              locIndex: locIndexes
+            });
+          }
         } else {
           updateAnnotations({
             index: annotation.index,
@@ -406,14 +535,14 @@ const Home: FunctionalComponent = () => {
   const handleChangeAce = (e: any, v: any) => {
     if (e && instance) {
       setTextvalue(e);
-      setCode(e.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
+      setCode(e.replace(/»+[0-9]/g, '').replace(/[0-9]+«/g, ''));
 
-      updateAnnotationsWithEvent(e);
+      updateAnnotationsWithEvent(e, annotations);
     } else {
       setTextvalue('');
-      setCode(''.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
+      setCode('');
 
-      updateAnnotationsWithEvent('');
+      updateAnnotationsWithEvent('', annotations);
     }
   };
 
@@ -428,7 +557,7 @@ const Home: FunctionalComponent = () => {
     restructurify();
   };
 
-  const highlightNodes = (e: HTMLElement, content: string, before: string, after: string) => {
+  const highlightNodes = (e: HTMLElement, content: string[], before: string[], after: string[]) => {
     if (e) {
       const nodes = e.children[0];
 
@@ -447,28 +576,34 @@ const Home: FunctionalComponent = () => {
           item.textContent = '';
         }
 
+        const befores = before.join(' ');
+        const contents = content.join(' ');
+        const afters = after.join(' ');
+
         // const arr = recurringTextFromLines.split(content.replace(/(\r\n|\n|\r)/gm, ''));
 
         const span1 = document.createElement('span');
-        span1.textContent = before;
-
-        const span2 = document.createElement('span');
-
-        span2.textContent = content;
-
-        const span3 = document.createElement('span');
-        if (code.slice(-1) === '\n') {
-          span3.textContent = after + '\n';
-        } else {
-          span3.textContent = after;
-        }
+        span1.textContent = before[0];
         e.appendChild(span1);
-        e.appendChild(span2);
-        span2.id = 'search-term';
-        span2.setAttribute('style', 'background-color:crimson');
-        e.appendChild(span3);
         prism.highlightElement(span1);
-        prism.highlightElement(span3);
+
+        for (let i = 0; i < content.length; i++) {
+          const span2 = document.createElement('span');
+
+          span2.textContent = content[i];
+
+          const span3 = document.createElement('span');
+          if (code.slice(-1) === '\n') {
+            span3.textContent = after[i] + '\n';
+          } else {
+            span3.textContent = after[i];
+          }
+          e.appendChild(span2);
+          span2.id = 'search-term';
+          span2.setAttribute('style', 'background-color:crimson');
+          e.appendChild(span3);
+          prism.highlightElement(span3);
+        }
       }
     }
   };
@@ -534,7 +669,7 @@ const Home: FunctionalComponent = () => {
   };
 
   const onReset = (e: any) => {
-    setTextvalue(textvalue.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
+    setTextvalue(textvalue.replace(/»+[0-9]/g, '').replace(/[0-9]+«/g, ''));
     setAnnotations([]);
   };
 
@@ -582,7 +717,7 @@ const Home: FunctionalComponent = () => {
                   ) : null}
                 </div>
                 <div>
-                  <p class="w-full text-grey-darkest pl-7 pt-3">{a.content ? a.content : 'empty content'}</p>
+                  <p class="w-full text-grey-darkest pl-7 pt-3">{a.content ? a.content.join(', ') : 'empty content'}</p>
                 </div>
               </div>
             </div>
