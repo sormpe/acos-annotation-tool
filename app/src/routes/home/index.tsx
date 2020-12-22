@@ -1,5 +1,5 @@
 import { FunctionalComponent, h } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState, useRef } from 'preact/hooks';
 import * as style from './style.css';
 
 import parse from 'html-react-parser';
@@ -20,6 +20,8 @@ import prism from 'prismjs';
 
 import { InputValues } from '../../config/inputs';
 
+// resizer code source: https://htmldom.dev/create-resizable-split-views/
+
 const Home: FunctionalComponent = () => {
   type annotationType = {
     index: number;
@@ -34,6 +36,9 @@ const Home: FunctionalComponent = () => {
   const [name, setName] = useState<string>('default');
   const [code, setCode] = useState<string>('');
   const [textvalue, setTextvalue] = useState<string>('');
+
+  const dragElemRef = useRef(null);
+  const codeBlockElemRef = useRef(null);
 
   const jsonValue = [
     {
@@ -55,8 +60,7 @@ const Home: FunctionalComponent = () => {
 
   const [showPreview, setShowPreview] = useState(true);
 
-  const [instance, setInstance] = useState<any | null>(null);
-  const [multipleCoords, setMultipleCoords] = useState<any[]>([]);
+  const [aceEditor, setAceEditor] = useState<any | null>(null);
 
   let resizer: any;
 
@@ -65,7 +69,7 @@ const Home: FunctionalComponent = () => {
 
   useEffect(() => {
     // Query the element
-    resizer = document.getElementById('dragMe') as any;
+    resizer = dragElemRef.current;
 
     leftSide = resizer.previousElementSibling;
     rightSide = resizer.nextElementSibling;
@@ -130,8 +134,6 @@ const Home: FunctionalComponent = () => {
     updateAnnotationsWithEvent(textvalue, annotations);
   }, [code, textvalue, annotations, syntaxHighlight]);
 
-  useEffect(() => {}, [multipleCoords]);
-
   function getSelectedTextRangeAce(code: any, codeToAnnotate: any) {
     const from = code.indexOf(codeToAnnotate) as number;
     const to = from + codeToAnnotate.length;
@@ -139,7 +141,7 @@ const Home: FunctionalComponent = () => {
   }
 
   const getCoords = (selectionRange: any) => {
-    var lines = instance.getSession().doc.getAllLines(),
+    var lines = aceEditor.getSession().doc.getAllLines(),
       range = selectionRange,
       i,
       n1,
@@ -168,7 +170,7 @@ const Home: FunctionalComponent = () => {
       selectionEnd: selectionEnd
     };
 
-    let { from, to } = getSelectedTextRangeAce(textvalue, instance.getSelectedText());
+    let { from, to } = getSelectedTextRangeAce(textvalue, aceEditor.getSelectedText());
     to = result.selectionEnd;
 
     if (range.start.row === range.end.row) {
@@ -180,7 +182,7 @@ const Home: FunctionalComponent = () => {
   };
 
   const addAnnotation = () => {
-    if (instance.selection.rangeList.ranges.length > 0) {
+    if (aceEditor.selection.rangeList.ranges.length > 0) {
       const index = annotations.length + 1;
 
       const contents = [];
@@ -190,17 +192,17 @@ const Home: FunctionalComponent = () => {
       const locIndexes = [];
       let modifiedCode = textvalue;
 
-      for (let i = 0; i < instance.selection.rangeList.ranges.length; i++) {
-        const { from, to } = getCoords(instance.selection.rangeList.ranges[i]);
+      for (let i = 0; i < aceEditor.selection.rangeList.ranges.length; i++) {
+        const { from, to } = getCoords(aceEditor.selection.rangeList.ranges[i]);
         let afterEnd = code.length + annotations.length * 4;
 
-        if (instance.selection.rangeList.ranges[i + 1]) {
-          const { from, to } = getCoords(instance.selection.rangeList.ranges[i + 1]);
+        if (aceEditor.selection.rangeList.ranges[i + 1]) {
+          const { from, to } = getCoords(aceEditor.selection.rangeList.ranges[i + 1]);
 
           afterEnd = from;
         }
 
-        const codeToAnnotate = instance.getValue();
+        const codeToAnnotate = aceEditor.getValue();
 
         const selection = codeToAnnotate.substring(from, to);
         const content = selection.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, '');
@@ -232,10 +234,10 @@ const Home: FunctionalComponent = () => {
         locIndex: locIndexes
       });
 
-      // instance.setValue(modifiedCode);
+      // aceEditor.setValue(modifiedCode);
     } else {
-      const { from, to } = getCoords(instance.getSelectionRange());
-      const codeToAnnotate = instance.getValue();
+      const { from, to } = getCoords(aceEditor.getSelectionRange());
+      const codeToAnnotate = aceEditor.getValue();
 
       const selection = codeToAnnotate.substring(from, to);
 
@@ -248,7 +250,7 @@ const Home: FunctionalComponent = () => {
 
       setTextvalue(modifiedCode);
 
-      // instance.setValue(modifiedCode);
+      // aceEditor.setValue(modifiedCode);
 
       updateAnnotations({
         index: index,
@@ -321,7 +323,7 @@ const Home: FunctionalComponent = () => {
     }
 
     setTextvalue(modifiedCode);
-    instance.setValue(modifiedCode);
+    aceEditor.setValue(modifiedCode);
 
     setAnnotations(splicedAnnotations);
   };
@@ -367,7 +369,7 @@ const Home: FunctionalComponent = () => {
     }
 
     setTextvalue(modifiedCode);
-    instance.setValue(modifiedCode);
+    aceEditor.setValue(modifiedCode);
 
     setAnnotations(annotations);
 
@@ -415,7 +417,7 @@ const Home: FunctionalComponent = () => {
     }
 
     setTextvalue(modifiedCode);
-    instance.setValue(modifiedCode);
+    aceEditor.setValue(modifiedCode);
 
     setAnnotations(annotations);
     restructurify();
@@ -533,7 +535,7 @@ const Home: FunctionalComponent = () => {
   };
 
   const handleChangeAce = (e: any, v: any) => {
-    if (e && instance) {
+    if (e && aceEditor) {
       setTextvalue(e);
       setCode(e.replace(/»+[0-9]/g, '').replace(/[0-9]+«/g, ''));
 
@@ -619,8 +621,9 @@ const Home: FunctionalComponent = () => {
     const before = annotation.beforeContent;
     const after = annotation.afterContent;
 
-    const d = document.getElementById('content-block') as HTMLElement;
-    highlightNodes(d, content, before, after);
+    const element = document.getElementById('content-block') as HTMLElement; // TODO: user codeBlockElemRef instead
+
+    highlightNodes(element, content, before, after);
   };
 
   const removeChildren = (elem: any) => {
@@ -638,7 +641,7 @@ const Home: FunctionalComponent = () => {
 
   const onMouseLeave = (e: any) => {
     setCode('');
-    const element = document.getElementById('content-block') as HTMLElement;
+    const element = document.getElementById('content-block') as HTMLElement; // TODO: user codeBlockElemRef instead
     removeChildren(element.childNodes[0]);
     setCode(code.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
   };
@@ -759,7 +762,7 @@ const Home: FunctionalComponent = () => {
         */}
           <AceEditor
             value={textvalue}
-            onLoad={instance => setInstance(instance)}
+            onLoad={aceEditor => setAceEditor(aceEditor)}
             mode={syntaxHighlight}
             wrapEnabled={true}
             theme="monokai"
@@ -783,7 +786,7 @@ const Home: FunctionalComponent = () => {
         </div>
       </div>
 
-      <div class={style.resizer} id="dragMe" />
+      <div class={style.resizer} ref={dragElemRef} />
 
       <div id={'right'} class={style.rightside}>
         {showPreview ? (
@@ -814,7 +817,7 @@ const Home: FunctionalComponent = () => {
               </div>
             </nav>
 
-            <div id={style.codeblock} class="p-2">
+            <div id={style.codeblock} ref={codeBlockElemRef} class="p-2">
               {code && (
                 <div>
                   <CodeBlock code={code} language={syntaxHighlight} />
