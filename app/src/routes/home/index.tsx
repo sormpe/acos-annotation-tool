@@ -464,7 +464,7 @@ const Home: FunctionalComponent = () => {
             const pureContents = [];
             const beforeContents = [];
             const afterContents = [];
-            const locIndexes = [];
+            const locIndeces = [];
 
             const idx = annotation.index;
             const startRegexp = new RegExp(idx + '«', 'g');
@@ -504,7 +504,7 @@ const Home: FunctionalComponent = () => {
               afterContents.push(nextAnno.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
             }
             for (let f of pureContents) {
-              locIndexes.push(e.indexOf(f));
+              locIndeces.push(e.indexOf(f) - (e.split(f)[0].match(/[0-9]+«/g) || []).length * 2 - (e.split(f)[0].match(/»+[0-9]/g) || []).length * 2);
             }
 
             updateAnnotations({
@@ -515,7 +515,7 @@ const Home: FunctionalComponent = () => {
               beforeContent: beforeContents,
               afterContent: afterContents,
               annotation: annotation.annotation,
-              locIndex: locIndexes
+              locIndex: locIndeces
             });
           }
         } else {
@@ -644,31 +644,6 @@ const Home: FunctionalComponent = () => {
     const element = document.getElementById('content-block') as HTMLElement; // TODO: user codeBlockElemRef instead
     removeChildren(element.childNodes[0]);
     setCode(code.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
-  };
-
-  const handleKeyDown = (e: any) => {
-    let value = textvalue,
-      selStartPos = e.currentTarget.selectionStart;
-
-    // handle 4-space indent on
-
-    if (e.key === 'Tab' && !e.shiftKey) {
-      value = value.substring(0, selStartPos) + '    ' + value.substring(selStartPos, value.length);
-      e.currentTarget.selectionStart = selStartPos + 3;
-      e.currentTarget.selectionEnd = selStartPos + 4;
-      e.preventDefault();
-
-      setTextvalue(value);
-    }
-
-    if (e.key === 'Tab' && e.shiftKey) {
-      value = value.substring(0, value.length - 4);
-      e.currentTarget.selectionStart = selStartPos - 3;
-      e.currentTarget.selectionEnd = selStartPos - 4;
-      e.preventDefault();
-
-      setTextvalue(value);
-    }
   };
 
   const onReset = (e: any) => {
