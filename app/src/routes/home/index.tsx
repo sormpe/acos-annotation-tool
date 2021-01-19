@@ -6,7 +6,7 @@ import parse from 'html-react-parser';
 
 import AceEditor from 'react-ace';
 
-import 'ace-builds/src-noconflict/mode-javascript';
+import 'ace-builds/src-noconflict/mode-html';
 import 'ace-builds/src-noconflict/mode-python';
 import 'ace-builds/src-noconflict/mode-c_cpp';
 import 'ace-builds/src-noconflict/mode-css';

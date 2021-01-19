@@ -1,5 +1,4 @@
 import Highlight, { defaultProps } from 'prism-react-renderer';
-import { useEffect, useState } from 'preact/hooks';
 
 import { FunctionalComponent, h, ComponentProps } from 'preact';
 
