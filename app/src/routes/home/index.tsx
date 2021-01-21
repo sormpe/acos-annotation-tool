@@ -189,7 +189,7 @@ const Home: FunctionalComponent = () => {
       const pureContents = [];
       const beforeAnnotations = [];
       const afterAnnotations = [];
-      const locIndexes = [];
+      const locIndeces = [];
       let modifiedCode = textvalue;
 
       for (let i = 0; i < aceEditor.selection.rangeList.ranges.length; i++) {
@@ -216,7 +216,7 @@ const Home: FunctionalComponent = () => {
         afterAnnotations.push(afterAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
 
         const locIndex = from - (beforeAnnotation.match(/«/g) || []).length * 2 - (beforeAnnotation.match(/»/g) || []).length * 2;
-        locIndexes.push(locIndex);
+        locIndeces.push(locIndex);
 
         modifiedCode = replaceAt(from + i * 4, to + i * 4, index + '«' + selection + '»' + index, modifiedCode);
       }
@@ -231,7 +231,7 @@ const Home: FunctionalComponent = () => {
         beforeContent: beforeAnnotations,
         afterContent: afterAnnotations,
         annotation: '',
-        locIndex: locIndexes
+        locIndex: locIndeces
       });
 
       // aceEditor.setValue(modifiedCode);
@@ -503,8 +503,14 @@ const Home: FunctionalComponent = () => {
 
               afterContents.push(nextAnno.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
             }
-            for (let f of pureContents) {
-              locIndeces.push(e.indexOf(f) - (e.split(f)[0].match(/[0-9]+«/g) || []).length * 2 - (e.split(f)[0].match(/»+[0-9]/g) || []).length * 2);
+
+            const subs = [];
+            for (let s of startIndices) {
+              subs.push(e.substring(0, s));
+            }
+
+            for (let f in pureContents) {
+              locIndeces.push(subs[f].length - (subs[f].match(/[0-9]+«/g) || []).length * 2 - (subs[f].match(/»+[0-9]/g) || []).length * 2);
             }
 
             updateAnnotations({
