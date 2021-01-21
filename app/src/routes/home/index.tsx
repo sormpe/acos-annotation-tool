@@ -464,7 +464,7 @@ const Home: FunctionalComponent = () => {
             const pureContents = [];
             const beforeContents = [];
             const afterContents = [];
-            const locIndeces = [];
+            const locIndices = [];
 
             const idx = annotation.index;
             const startRegexp = new RegExp(idx + '«', 'g');
@@ -510,7 +510,7 @@ const Home: FunctionalComponent = () => {
             }
 
             for (let f in pureContents) {
-              locIndeces.push(subs[f].length - (subs[f].match(/[0-9]+«/g) || []).length * 2 - (subs[f].match(/»+[0-9]/g) || []).length * 2);
+              locIndices.push(subs[f].length - (subs[f].match(/[0-9]+«/g) || []).length * 2 - (subs[f].match(/»+[0-9]/g) || []).length * 2);
             }
 
             updateAnnotations({
@@ -521,7 +521,7 @@ const Home: FunctionalComponent = () => {
               beforeContent: beforeContents,
               afterContent: afterContents,
               annotation: annotation.annotation,
-              locIndex: locIndeces
+              locIndex: locIndices
             });
           }
         } else {
