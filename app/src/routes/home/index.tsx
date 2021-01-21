@@ -569,26 +569,12 @@ const Home: FunctionalComponent = () => {
     if (e) {
       const nodes = e.children[0];
 
-      let recurringTextFromLines = '';
-      let recurringTextFromLinesArray = [];
-
       for (let i = 0; i < nodes.children.length; i++) {
         const e = nodes.children[i] as HTMLElement;
 
-        for (let j = 0; j < e.children.length; j++) {
-          recurringTextFromLines += (e.children[j] as any).innerText;
-
-          recurringTextFromLinesArray.push(e.children[j]);
-        }
         for (let item of nodes.children as any) {
           item.textContent = '';
         }
-
-        const befores = before.join(' ');
-        const contents = content.join(' ');
-        const afters = after.join(' ');
-
-        // const arr = recurringTextFromLines.split(content.replace(/(\r\n|\n|\r)/gm, ''));
 
         const span1 = document.createElement('span');
         span1.textContent = before[0];
@@ -734,13 +720,7 @@ const Home: FunctionalComponent = () => {
               Reset
             </button>
           </div>
-          {/*
-        <pre>
-          <code>
-            <textarea onKeyDown={handleKeyDown} value={textvalue} class={style['text-area']} id="code-to-annotate" onInput={handleChange} />
-          </code>
-        </pre>
-        */}
+
           <AceEditor
             value={textvalue}
             onLoad={aceEditor => setAceEditor(aceEditor)}
