@@ -34,15 +34,6 @@
   border: 3px solid green;
 }
 
-.textvalue {
-  white-space: pre;
-  width: 52em;
-  height: 12em;
-  margin: 0.5em 0em 0.5em 0em;
-  padding: 1em 0em 2em 0em;
-  border: 1px solid green;
-}
-
 .leftside {
   display: flex;
   flex-direction: column;
