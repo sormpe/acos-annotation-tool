@@ -2,9 +2,9 @@
 
 # Acos annotation tool
 
-This is a repository for Acos server tool called "code annotation tool". With this tool course instructors can easily create annotations that hihglight specifics parts of a program code.
+This is a repository for Acos server tool called "code annotation tool". With this tool course instructors can easily create annotations that highlights specific parts of a program code.
 
-The tool generates both RST and spesific JSON syntax which is used with Acos content type in order to create code annotation packages.
+The tool generates both RST and spesific JSON object which is used within spesific code annotation packages. The actual json handling is done by spesific code annotation content type.
 
 ## JSON syntax
 
