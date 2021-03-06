@@ -1,3 +1,5 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/ca43731c-bb8e-4f97-aad1-4ba82a37f1fb/deploy-status)](https://app.netlify.com/sites/fervent-panini-0fa2cb/deploys)
+
 # Acos annotation tool
 
 This is a repository for Acos server tool called "code annotation tool". With this tool course instructors can easily create annotations that hihglight specifics parts of a program code.
