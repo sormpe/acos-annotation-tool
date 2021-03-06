@@ -1,20 +1,21 @@
-import Highlight, { defaultProps } from 'prism-react-renderer';
-import { useEffect, useState } from 'preact/hooks';
+import Highlight, { defaultProps, Language } from 'prism-react-renderer';
 
-import { FunctionalComponent, h, ComponentProps } from 'preact';
+import { FunctionalComponent, h } from 'preact';
 
 import './../../style/prism.css';
 
-interface CodeProps extends ComponentProps<any> {
+interface CodeProps {
   code: string;
-  language: any;
+  language: Language;
 }
 
-const CodeBlock: FunctionalComponent<CodeProps> = ({ code, language }) => {
+const CodeBlock: FunctionalComponent<CodeProps> = (props: CodeProps) => {
+  const { code, language } = props;
+  console.log('lang', language);
   return (
     <div id="content-block">
       <Highlight {...defaultProps} theme={undefined} code={code} language={language}>
-        {({ className, style, tokens, getLineProps, getTokenProps }) => (
+        {({ className, tokens, getLineProps, getTokenProps }): JSX.Element => (
           <pre class={className} style={'white-space: pre-wrap; padding: 0.6em 0.2em 0.6em 1em;'}>
             {tokens.map((line, i) => {
               // Ensure blank lines/spaces drop onto a new line
@@ -23,13 +24,14 @@ const CodeBlock: FunctionalComponent<CodeProps> = ({ code, language }) => {
               }
 
               return (
-                <div {...(getLineProps({ line, key: i }) as any)}>
+                <div key={i} {...getLineProps({ line, key: i })}>
                   {line.map((token, key) => (
                     <span
-                      {...(getTokenProps({
+                      key={key}
+                      {...getTokenProps({
                         token,
                         key
-                      }) as any)}
+                      })}
                     />
                   ))}
                 </div>

@@ -1,5 +1,5 @@
 import { FunctionalComponent, h } from 'preact';
-import { useEffect, useState, useRef } from 'preact/hooks';
+import { useEffect, useCallback, useState, useRef } from 'preact/hooks';
 import * as style from './style.css';
 
 import parse from 'html-react-parser';
@@ -14,13 +14,42 @@ import 'ace-builds/src-noconflict/mode-plain_text';
 
 import 'ace-builds/src-noconflict/theme-github';
 import 'ace-builds/src-noconflict/theme-monokai';
+import 'ace-builds/src-noconflict/theme-tomorrow_night';
 
 import CodeBlock from '../../components/codeblock';
 import prism from 'prismjs';
 
 import { InputValues } from '../../config/inputs';
+import { Language } from 'prism-react-renderer';
 
 // resizer code source: https://htmldom.dev/create-resizable-split-views/
+
+// TODO: move types into own file
+type MyType = {
+  language: string;
+  content: string;
+  annotatedContent: string;
+  annotations: Array<object>;
+};
+
+type MyGroupType = {
+  [key: string]: MyType;
+};
+
+type FromToObject = {
+  from: number;
+  to: number;
+};
+
+type coord = {
+  row: number;
+  column: number;
+};
+
+interface SelectionRangeObject {
+  start: coord;
+  end: coord;
+}
 
 const Home: FunctionalComponent = () => {
   type annotationType = {
@@ -33,7 +62,7 @@ const Home: FunctionalComponent = () => {
     locIndex: number[];
   };
 
-  const [name, setName] = useState<string>('default');
+  const [name, setName] = useState<string | null | undefined>('default');
   const [code, setCode] = useState<string>('');
   const [textvalue, setTextvalue] = useState<string>('');
 
@@ -54,7 +83,7 @@ const Home: FunctionalComponent = () => {
   ];
 
   const [rstResult, setRstResult] = useState<string>('');
-  const [jsonResult, setJsonResult] = useState<object>(jsonValue);
+  const [jsonResult, setJsonResult] = useState<object | Array<MyType>>(jsonValue);
   const [annotations, setAnnotations] = useState<annotationType[] | []>([]);
   const [syntaxHighlight, setSyntaxHighlight] = useState<string>('plain_text');
 
@@ -62,92 +91,240 @@ const Home: FunctionalComponent = () => {
 
   const [aceEditor, setAceEditor] = useState<any | null>(null);
 
-  let resizer: any;
-
-  let leftSide: any;
-  let rightSide: any;
-
-  useEffect(() => {
-    // Query the element
-    resizer = dragElemRef.current;
-
-    leftSide = resizer.previousElementSibling;
-    rightSide = resizer.nextElementSibling;
-    // Attach the handler
-    resizer.addEventListener('mousedown', mouseDownHandler);
-  }, []);
+  const [resizer, setResizer] = useState<HTMLElement | null | undefined>(undefined);
+  let leftSide: HTMLElement | null | undefined;
+  let rightSide: HTMLElement | null | undefined;
 
   // The current position of mouse
   let x = 0;
-  let y = 0;
-  let leftWidth = 0;
+  // let y = 0;
+  let leftWidth: number | undefined = 0;
 
-  // Handle the mousedown event
-  // that's triggered when user drags the resizer
-  const mouseDownHandler = function(e: any) {
-    // Get the current mouse position
-    x = e.clientX;
-    y = e.clientY;
-    leftWidth = leftSide.getBoundingClientRect().width;
-
-    // Attach the listeners to `document`
-    document.addEventListener('mousemove', mouseMoveHandler);
-    document.addEventListener('mouseup', mouseUpHandler);
-  };
-
-  const mouseMoveHandler = function(e: any) {
+  const mouseMoveHandler = (e: MouseEvent): void => {
     // How far the mouse has been moved
     const dx = e.clientX - x;
-    const dy = e.clientY - y;
+    // const dy = e.clientY - y;
 
-    const newLeftWidth = ((leftWidth + dx) * 100) / resizer.parentNode.getBoundingClientRect().width;
-    leftSide.style.width = `${newLeftWidth}%`;
+    const newLeftWidth =
+      ((leftWidth ? leftWidth + dx : 0) * 100) / (resizer?.parentElement ? resizer.parentElement.getBoundingClientRect().width : 0);
+    if (leftSide) {
+      leftSide.style.width = `${newLeftWidth}%`;
+      leftSide.style.userSelect = 'none';
+      leftSide.style.pointerEvents = 'none';
+    }
 
-    resizer.style.cursor = 'col-resize';
+    if (rightSide) {
+      rightSide.style.userSelect = 'none';
+      rightSide.style.pointerEvents = 'none';
+    }
+
+    if (resizer) {
+      resizer.style.cursor = 'col-resize';
+    }
+
     document.body.style.cursor = 'col-resize';
-
-    leftSide.style.userSelect = 'none';
-    leftSide.style.pointerEvents = 'none';
-
-    rightSide.style.userSelect = 'none';
-    rightSide.style.pointerEvents = 'none';
   };
 
-  const mouseUpHandler = function() {
-    resizer.style.removeProperty('cursor');
+  const mouseUpHandler = (): void => {
+    if (resizer) {
+      resizer.style.removeProperty('cursor');
+    }
     document.body.style.removeProperty('cursor');
 
-    leftSide.style.removeProperty('user-select');
-    leftSide.style.removeProperty('pointer-events');
+    if (leftSide) {
+      leftSide.style.removeProperty('user-select');
+      leftSide.style.removeProperty('pointer-events');
+    }
 
-    rightSide.style.removeProperty('user-select');
-    rightSide.style.removeProperty('pointer-events');
+    if (rightSide) {
+      rightSide.style.removeProperty('user-select');
+      rightSide.style.removeProperty('pointer-events');
+    }
 
     // Remove the handlers of `mousemove` and `mouseup`
     document.removeEventListener('mousemove', mouseMoveHandler);
     document.removeEventListener('mouseup', mouseUpHandler);
   };
 
+  // Handle the mousedown event
+  // that's triggered when user drags the resizer
+  const mouseDownHandler = (e: MouseEvent): void => {
+    // Get the current mouse position
+    x = e.clientX;
+    // y = e.clientY;
+    leftWidth = leftSide?.getBoundingClientRect().width;
+
+    // Attach the listeners to `document`
+    document.addEventListener('mousemove', mouseMoveHandler);
+    document.addEventListener('mouseup', mouseUpHandler);
+  };
+
+  useEffect(() => {
+    // Query the element
+    setResizer(dragElemRef.current);
+    leftSide = resizer?.previousElementSibling as HTMLElement;
+    rightSide = resizer?.nextElementSibling as HTMLElement;
+
+    // Attach the handler
+    resizer?.addEventListener('mousedown', mouseDownHandler);
+  }, [mouseDownHandler, resizer]);
+
+  const updateAnnotations = useCallback(
+    (annotation: annotationType) => {
+      setAnnotations([]);
+
+      const modified: annotationType[] = annotations;
+      const foundIndex = modified.findIndex(x => x.index === annotation.index);
+      if (foundIndex === -1) {
+        modified.push(annotation);
+      } else {
+        modified[foundIndex] = annotation;
+      }
+
+      setAnnotations(modified);
+    },
+    [annotations]
+  );
+
+  const tabify = (text: string): string => {
+    let tabified = '';
+    const lines = text.split('\n');
+    lines.map(l => {
+      tabified += '\t\t' + l + '\n';
+    });
+    return tabified;
+  };
+
+  const restructurify = useCallback(() => {
+    let rst = '';
+    rst += '.. annotated::\n';
+    rst += '\t.. code-block:: ' + syntaxHighlight + '\n\n';
+    rst += tabify(textvalue.replace(/»+[0-9]/g, '»'));
+    rst += '\n\n';
+
+    (annotations as annotationType[]).map((annotation: annotationType) => {
+      rst += '\t.. annotation::\n\t\t' + annotation.annotation + '\n\n';
+    });
+
+    const json: MyType[] = jsonResult;
+    json[0].language = syntaxHighlight;
+    json[1].content = code;
+    json[1].annotatedContent = textvalue;
+
+    json[2].annotations = [];
+    (annotations as annotationType[]).map((annotation: annotationType) => {
+      json[2].annotations.push({
+        index: json[2].annotations.length + 1,
+        content: annotation.content,
+        annotation: annotation.annotation,
+        locIndices: annotation.locIndex
+      });
+    });
+
+    setRstResult(rst);
+    setJsonResult(json);
+  }, [annotations, code, jsonResult, syntaxHighlight, textvalue]);
+
+  const updateAnnotationsWithEvent = useCallback(
+    (e: string, annotations: annotationType[]) => {
+      if (annotations.length > 0) {
+        for (const annotation of annotations) {
+          if (e.split(annotation.index + '«')[1]) {
+            for (let i = 0; i < annotations.length; i++) {
+              const contents = [];
+              const pureContents = [];
+              const beforeContents = [];
+              const afterContents = [];
+              const locIndexes = [];
+
+              const idx = annotation.index;
+              const startRegexp = new RegExp(idx + '«', 'g');
+              const startregex = startRegexp;
+              let startresult;
+              const startIndices = [];
+              while ((startresult = startregex.exec(e))) {
+                startIndices.push(startresult.index);
+              }
+
+              const endRegexp = new RegExp('»' + idx, 'g');
+              const regex = endRegexp;
+              let result;
+              const endIndices = [];
+              while ((result = regex.exec(e))) {
+                endIndices.push(result.index);
+              }
+
+              for (let f = 0; f < startIndices.length; f++) {
+                contents.push(
+                  e
+                    .substring(startIndices[f] + 2, endIndices[f])
+                    .replace(/[0-9]+«/g, '')
+                    .replace(/»+[0-9]/g, '')
+                );
+                pureContents.push(e.substring(startIndices[f] + 2, endIndices[f]));
+
+                beforeContents.push(
+                  e
+                    .substring(endIndices[f - 1] + 2, startIndices[f])
+                    .replace(/[0-9]+«/g, '')
+                    .replace(/»+[0-9]/g, '')
+                );
+
+                const nextAnno = e.substring(endIndices[f] + 2, e.length).split(idx + '«')[0];
+
+                afterContents.push(nextAnno.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
+              }
+              for (const f of pureContents) {
+                locIndexes.push(e.indexOf(f));
+              }
+
+              updateAnnotations({
+                index: annotation.index,
+                // prettier-ignore
+                content: contents,
+                pureContent: pureContents,
+                beforeContent: beforeContents,
+                afterContent: afterContents,
+                annotation: annotation.annotation,
+                locIndex: locIndexes
+              });
+            }
+          } else {
+            updateAnnotations({
+              index: annotation.index,
+              // prettier-ignore
+              content: annotation.content,
+              pureContent: annotation.pureContent,
+              beforeContent: annotation.beforeContent,
+              afterContent: annotation.afterContent,
+              annotation: annotation.annotation,
+              locIndex: annotation.locIndex
+            });
+          }
+        }
+      }
+    },
+    [updateAnnotations]
+  );
+
   useEffect(() => {
     restructurify();
 
     updateAnnotationsWithEvent(textvalue, annotations);
-  }, [code, textvalue, annotations, syntaxHighlight]);
+  }, [code, textvalue, annotations, syntaxHighlight, restructurify, updateAnnotationsWithEvent]);
 
-  function getSelectedTextRangeAce(code: any, codeToAnnotate: any) {
-    const from = code.indexOf(codeToAnnotate) as number;
+  const getSelectedTextRangeAce = (code: string, codeToAnnotate: string): FromToObject => {
+    const from = code.indexOf(codeToAnnotate);
     const to = from + codeToAnnotate.length;
     return { from, to };
-  }
+  };
 
-  const getCoords = (selectionRange: any) => {
-    var lines = aceEditor.getSession().doc.getAllLines(),
-      range = selectionRange,
-      i,
-      n1,
-      n2,
-      selectionStart = 0,
-      selectionEnd = 0;
+  const getCoords = (selectionRange: SelectionRangeObject): FromToObject => {
+    const lines = aceEditor.getSession().doc.getAllLines();
+    const range = selectionRange;
+    let i, n1, n2;
+    let selectionStart = 0;
+    let selectionEnd = 0;
 
     for (i = 0, n1 = lines.length, n2 = range.end.row; i < n1 && i <= n2; ++i) {
       // Selection Start
@@ -177,11 +354,16 @@ const Home: FunctionalComponent = () => {
       from = result.selectionStart;
     }
 
-    const r: any = { from, to };
+    const r = { from, to };
     return r;
   };
 
-  const addAnnotation = () => {
+  const replaceAt = (from: number, to: number, replacement: string, value: string): string => {
+    const modified = value.substr(0, from) + replacement + value.substr(to, value.length);
+    return modified;
+  };
+
+  const addAnnotation = (): void => {
     if (aceEditor.selection.rangeList.ranges.length > 0) {
       const index = annotations.length + 1;
 
@@ -197,7 +379,7 @@ const Home: FunctionalComponent = () => {
         let afterEnd = code.length + annotations.length * 4;
 
         if (aceEditor.selection.rangeList.ranges[i + 1]) {
-          const { from, to } = getCoords(aceEditor.selection.rangeList.ranges[i + 1]);
+          const { from } = getCoords(aceEditor.selection.rangeList.ranges[i + 1]);
 
           afterEnd = from;
         }
@@ -265,57 +447,13 @@ const Home: FunctionalComponent = () => {
     }
   };
 
-  const replaceAt = (from: number, to: number, replacement: string, value: string) => {
-    const modified = value.substr(0, from) + replacement + value.substr(to, value.length);
-    return modified;
-  };
-
-  const tabify = (text: string) => {
-    let tabified = '';
-    const lines = text.split('\n');
-    lines.map(l => {
-      tabified += '\t\t' + l + '\n';
-    });
-    return tabified;
-  };
-
-  const restructurify = () => {
-    let rst = '';
-    rst += '.. annotated::\n';
-    rst += '\t.. code-block:: ' + syntaxHighlight + '\n\n';
-    rst += tabify(textvalue.replace(/»+[0-9]/g, '»'));
-    rst += '\n\n';
-
-    (annotations as annotationType[]).map((annotation: annotationType, idx: any) => {
-      rst += '\t.. annotation::\n\t\t' + annotation.annotation + '\n\n';
-    });
-
-    let json: any = jsonResult;
-    json[0].language = syntaxHighlight;
-    json[1].content = code;
-    json[1].annotatedContent = textvalue;
-
-    json[2].annotations = [];
-    (annotations as annotationType[]).map((annotation: annotationType, idx: any) => {
-      json[2].annotations.push({
-        index: json[2].annotations.length + 1,
-        content: annotation.content,
-        annotation: annotation.annotation,
-        locIndices: annotation.locIndex
-      });
-    });
-
-    setRstResult(rst);
-    setJsonResult(json);
-  };
-
-  const removeAnnotation = (e: any, index: number) => {
-    const idx = Number(e.target.getAttribute('data-index'));
+  const removeAnnotation = (e: Event, index: number): void => {
+    const idx = Number((e?.target as Element).getAttribute('data-index'));
     const annotationToBeRemoved = annotations.find(a => a.index === index) as annotationType;
     const splicedAnnotations = annotations.filter(item => item.index !== idx);
 
     let modifiedCode = textvalue;
-    for (let c of annotationToBeRemoved.pureContent) {
+    for (const c of annotationToBeRemoved.pureContent) {
       const coords = modifiedCode.indexOf(index + '«' + c + '»' + index);
       const newTextValue = modifiedCode.substring(coords + 2, coords + c.length + 2);
 
@@ -328,7 +466,7 @@ const Home: FunctionalComponent = () => {
     setAnnotations(splicedAnnotations);
   };
 
-  const moveAnnotationDown = (e: any, index: number) => {
+  const moveAnnotationDown = (index: number): void => {
     setAnnotations([]);
 
     const annotation = annotations[index - 1];
@@ -376,7 +514,7 @@ const Home: FunctionalComponent = () => {
     restructurify();
   };
 
-  const moveAnnotationUp = (e: any, index: number) => {
+  const moveAnnotationUp = (index: number): void => {
     setAnnotations([]);
 
     const aboveAnnotation = annotations[index - 2];
@@ -423,21 +561,7 @@ const Home: FunctionalComponent = () => {
     restructurify();
   };
 
-  const updateAnnotations = (annotation: annotationType) => {
-    setAnnotations([]);
-
-    const modified: annotationType[] = annotations;
-    const foundIndex = modified.findIndex(x => x.index === annotation.index);
-    if (foundIndex === -1) {
-      modified.push(annotation);
-    } else {
-      modified[foundIndex] = annotation;
-    }
-
-    setAnnotations(modified);
-  };
-
-  const copyRstToClipboard = () => {
+  const copyRstToClipboard = (): void => {
     const el = document.createElement('textarea');
     el.value = rstResult;
     document.body.appendChild(el);
@@ -446,7 +570,7 @@ const Home: FunctionalComponent = () => {
     document.body.removeChild(el);
   };
 
-  const copyJsonToClipboard = () => {
+  const copyJsonToClipboard = (): void => {
     const el = document.createElement('textarea');
     el.value = name + ': ' + JSON.stringify(jsonResult, null, 2);
     document.body.appendChild(el);
@@ -455,86 +579,7 @@ const Home: FunctionalComponent = () => {
     document.body.removeChild(el);
   };
 
-  const updateAnnotationsWithEvent = (e: any, annotations: annotationType[]) => {
-    if (annotations.length > 0) {
-      for (let annotation of annotations as any) {
-        if (e.split(annotation.index + '«')[1]) {
-          for (let i = 0; i < annotations.length; i++) {
-            const contents = [];
-            const pureContents = [];
-            const beforeContents = [];
-            const afterContents = [];
-            const locIndexes = [];
-
-            const idx = annotation.index;
-            const startRegexp = new RegExp(idx + '«', 'g');
-            let startregex = startRegexp,
-              startresult,
-              startIndices = [];
-            while ((startresult = startregex.exec(e))) {
-              startIndices.push(startresult.index);
-            }
-
-            const endRegexp = new RegExp('»' + idx, 'g');
-            let regex = endRegexp,
-              result,
-              endIndices = [];
-            while ((result = regex.exec(e))) {
-              endIndices.push(result.index);
-            }
-
-            for (let f = 0; f < startIndices.length; f++) {
-              contents.push(
-                e
-                  .substring(startIndices[f] + 2, endIndices[f])
-                  .replace(/[0-9]+«/g, '')
-                  .replace(/»+[0-9]/g, '')
-              );
-              pureContents.push(e.substring(startIndices[f] + 2, endIndices[f]));
-
-              beforeContents.push(
-                e
-                  .substring(endIndices[f - 1] + 2, startIndices[f])
-                  .replace(/[0-9]+«/g, '')
-                  .replace(/»+[0-9]/g, '')
-              );
-
-              const nextAnno = e.substring(endIndices[f] + 2, e.length).split(idx + '«')[0];
-
-              afterContents.push(nextAnno.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
-            }
-            for (let f of pureContents) {
-              locIndexes.push(e.indexOf(f));
-            }
-
-            updateAnnotations({
-              index: annotation.index,
-              // prettier-ignore
-              content: contents,
-              pureContent: pureContents,
-              beforeContent: beforeContents,
-              afterContent: afterContents,
-              annotation: annotation.annotation,
-              locIndex: locIndexes
-            });
-          }
-        } else {
-          updateAnnotations({
-            index: annotation.index,
-            // prettier-ignore
-            content: annotation.content,
-            pureContent: annotation.pureContent,
-            beforeContent: annotation.beforeContent,
-            afterContent: annotation.afterContent,
-            annotation: annotation.annotation,
-            locIndex: annotation.locIndex
-          });
-        }
-      }
-    }
-  };
-
-  const handleChangeAce = (e: any, v: any) => {
+  const handleChangeAce = (e: string): void => {
     if (e && aceEditor) {
       setTextvalue(e);
       setCode(e.replace(/»+[0-9]/g, '').replace(/[0-9]+«/g, ''));
@@ -548,41 +593,32 @@ const Home: FunctionalComponent = () => {
     }
   };
 
-  const handleHighLightChange = (e: any) => {
-    setSyntaxHighlight(e.target.value);
+  const handleHighLightChange = (e: Event): void => {
+    setSyntaxHighlight((e.target as HTMLInputElement).value);
   };
 
-  const inputChange = (e: any, index: number) => {
+  const inputChange = (e: Event, index: number): void => {
     const annotation = annotations.find(a => a.index === index) as annotationType;
-    const a = { ...annotation, annotation: e.target.value };
+    const a = { ...annotation, annotation: (e.target as HTMLInputElement).value };
     updateAnnotations(a);
     restructurify();
   };
 
-  const highlightNodes = (e: HTMLElement, content: string[], before: string[], after: string[]) => {
+  const highlightNodes = (e: HTMLElement, content: string[], before: string[], after: string[]): void => {
     if (e) {
       const nodes = e.children[0];
 
-      let recurringTextFromLines = '';
-      let recurringTextFromLinesArray = [];
+      const recurringTextFromLinesArray = [];
 
       for (let i = 0; i < nodes.children.length; i++) {
         const e = nodes.children[i] as HTMLElement;
 
         for (let j = 0; j < e.children.length; j++) {
-          recurringTextFromLines += (e.children[j] as any).innerText;
-
           recurringTextFromLinesArray.push(e.children[j]);
         }
-        for (let item of nodes.children as any) {
-          item.textContent = '';
+        for (let k = 0; k < nodes.children.length; k++) {
+          nodes.children[k].textContent = '';
         }
-
-        const befores = before.join(' ');
-        const contents = content.join(' ');
-        const afters = after.join(' ');
-
-        // const arr = recurringTextFromLines.split(content.replace(/(\r\n|\n|\r)/gm, ''));
 
         const span1 = document.createElement('span');
         span1.textContent = before[0];
@@ -595,7 +631,7 @@ const Home: FunctionalComponent = () => {
           span2.textContent = content[i];
 
           const span3 = document.createElement('span');
-          if (code.slice(-1) === '\n') {
+          if (code.endsWith('\n')) {
             span3.textContent = after[i] + '\n';
           } else {
             span3.textContent = after[i];
@@ -610,9 +646,8 @@ const Home: FunctionalComponent = () => {
     }
   };
 
-  const onMouseOver = (e: any) => {
-    const index: number = Number(e.target.id.slice(-1));
-    (annotations as any[]).map(a => {});
+  const onMouseOver = (e: Event): void => {
+    const index = Number(e ? (e.target as HTMLInputElement).id.slice(-1) : 0);
 
     const annotation = annotations.find(a => a.index === index) as annotationType;
 
@@ -626,52 +661,30 @@ const Home: FunctionalComponent = () => {
     highlightNodes(element, content, before, after);
   };
 
-  const removeChildren = (elem: any) => {
-    while (elem.hasChildNodes()) {
+  const removeChildren = (elem: HTMLElement): void => {
+    while (elem?.hasChildNodes()) {
       if (elem.id === 'search-term') {
         elem.removeAttribute('style');
       }
 
-      removeChildren(elem.lastChild);
-      elem.removeChild(elem.lastChild);
+      if (elem) {
+        removeChildren(elem.lastChild as HTMLElement);
+        elem.removeChild(elem.lastChild as Node);
+      }
     }
 
     setCode('');
   };
 
-  const onMouseLeave = (e: any) => {
+  const onMouseLeave = (): void => {
     setCode('');
     const element = document.getElementById('content-block') as HTMLElement; // TODO: user codeBlockElemRef instead
-    removeChildren(element.childNodes[0]);
+    element ? removeChildren(element.childNodes[0] as HTMLElement) : null;
+
     setCode(code.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
   };
 
-  const handleKeyDown = (e: any) => {
-    let value = textvalue,
-      selStartPos = e.currentTarget.selectionStart;
-
-    // handle 4-space indent on
-
-    if (e.key === 'Tab' && !e.shiftKey) {
-      value = value.substring(0, selStartPos) + '    ' + value.substring(selStartPos, value.length);
-      e.currentTarget.selectionStart = selStartPos + 3;
-      e.currentTarget.selectionEnd = selStartPos + 4;
-      e.preventDefault();
-
-      setTextvalue(value);
-    }
-
-    if (e.key === 'Tab' && e.shiftKey) {
-      value = value.substring(0, value.length - 4);
-      e.currentTarget.selectionStart = selStartPos - 3;
-      e.currentTarget.selectionEnd = selStartPos - 4;
-      e.preventDefault();
-
-      setTextvalue(value);
-    }
-  };
-
-  const onReset = (e: any) => {
+  const onReset = (): void => {
     setTextvalue(textvalue.replace(/»+[0-9]/g, '').replace(/[0-9]+«/g, ''));
     setAnnotations([]);
   };
@@ -688,14 +701,14 @@ const Home: FunctionalComponent = () => {
                 <div class="flex mt-4">
                   <span class="px-3">{a.index}</span>
                   <input
-                    onInput={e => inputChange(e, a.index)}
+                    onInput={(e): void => inputChange(e, a.index)}
                     id={'annotation-input-' + a.index}
                     value={annotation.index === a.index ? annotation.annotation : 'error'}
                     class="shadow appearance-none border rounded w-full py-2 px-3 mr-4 text-grey-darker"
                     placeholder="Write annotation..."
                   />
                   <button
-                    onClick={e => removeAnnotation(e, a.index)}
+                    onClick={(e): void => removeAnnotation(e, a.index)}
                     id="remove-button"
                     data-index={a.index}
                     class="flex-no-shrink p-2 ml-4 mr-2 border-2 rounded hover:text-white text-green border-green hover:bg-green"
@@ -704,7 +717,7 @@ const Home: FunctionalComponent = () => {
                   </button>
                   {annotations.length > 1 && annotations[a.index] !== undefined ? (
                     <button
-                      onClick={e => moveAnnotationDown(e, a.index)}
+                      onClick={(): void => moveAnnotationDown(a.index)}
                       class="flex-no-shrink p-2 ml-2 border-2 rounded text-red border-red hover:text-white hover:bg-red"
                     >
                       &darr;
@@ -712,7 +725,7 @@ const Home: FunctionalComponent = () => {
                   ) : null}
                   {annotations.length > 1 && annotations[a.index - 2] !== undefined ? (
                     <button
-                      onClick={e => moveAnnotationUp(e, a.index)}
+                      onClick={(): void => moveAnnotationUp(a.index)}
                       class="flex-no-shrink p-2 ml-2 border-2 rounded text-red border-red hover:text-white hover:bg-red"
                     >
                       &uarr;
@@ -730,15 +743,19 @@ const Home: FunctionalComponent = () => {
     }
   });
 
-  const highlightValues = Object.keys(InputValues).map(i => {
-    return <option value={i}>{i}</option>;
+  const highlightValues = Object.keys(InputValues).map((i, key) => {
+    return (
+      <option key={key} value={i}>
+        {i}
+      </option>
+    );
   });
 
   return (
     <div class={style.home}>
       <div class={style.leftside}>
         <div>
-          <input value={name} onInput={(e: any) => setName(e.target.value)} class="mr-6" />
+          <input value={name ? name : ''} onInput={(e: Event): void => setName(e ? (e.target as HTMLInputElement).value : null)} class="mr-6" />
 
           <select id="syntax-highlight-input" name="highlight" onInput={handleHighLightChange}>
             {highlightValues}
@@ -762,7 +779,7 @@ const Home: FunctionalComponent = () => {
         */}
           <AceEditor
             value={textvalue}
-            onLoad={aceEditor => setAceEditor(aceEditor)}
+            onLoad={(aceEditor): void => setAceEditor(aceEditor)}
             mode={syntaxHighlight}
             wrapEnabled={true}
             theme="monokai"
@@ -794,7 +811,7 @@ const Home: FunctionalComponent = () => {
             <nav class="relative flex items-center justify-between sm:h-12 bg-blue-200">
               <span class="hidden sm:block">
                 <button
-                  onClick={() => setShowPreview(!showPreview)}
+                  onClick={(): void => setShowPreview(!showPreview)}
                   type="button"
                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
@@ -820,7 +837,7 @@ const Home: FunctionalComponent = () => {
             <div id={style.codeblock} ref={codeBlockElemRef} class="p-2">
               {code && (
                 <div>
-                  <CodeBlock code={code} language={syntaxHighlight} />
+                  <CodeBlock code={code} language={syntaxHighlight as Language} />
                 </div>
               )}
               {(annotations as annotationType[]).map(a => {
@@ -841,7 +858,7 @@ const Home: FunctionalComponent = () => {
             <nav class="relative flex items-center justify-between sm:h-12 lg:justify-start bg-blue-200">
               <span class="hidden sm:block">
                 <button
-                  onClick={() => setShowPreview(!showPreview)}
+                  onClick={(): void => setShowPreview(!showPreview)}
                   type="button"
                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >

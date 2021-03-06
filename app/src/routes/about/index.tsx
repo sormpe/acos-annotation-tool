@@ -7,6 +7,7 @@ const About: FunctionalComponent = () => {
     <div>
       <div class={style.about}>
         <h2>Code annotion tool</h2>
+
         <p>
           With this tool you can easily create and preview annotations for code and text snippets. It genererates both reStructuredText and JSON for
           later usage. RST can be used in A+ and JSONs are used with codeannotation ACOS content type.
