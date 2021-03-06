@@ -25,15 +25,11 @@ import { Language } from 'prism-react-renderer';
 // resizer code source: https://htmldom.dev/create-resizable-split-views/
 
 // TODO: move types into own file
-type MyType = {
+type JsonType = {
   language: string;
   content: string;
   annotatedContent: string;
   annotations: Array<object>;
-};
-
-type MyGroupType = {
-  [key: string]: MyType;
 };
 
 type FromToObject = {
@@ -83,7 +79,7 @@ const Home: FunctionalComponent = () => {
   ];
 
   const [rstResult, setRstResult] = useState<string>('');
-  const [jsonResult, setJsonResult] = useState<object | Array<MyType>>(jsonValue);
+  const [jsonResult, setJsonResult] = useState<object | Array<JsonType>>(jsonValue);
   const [annotations, setAnnotations] = useState<annotationType[] | []>([]);
   const [syntaxHighlight, setSyntaxHighlight] = useState<string>('plain_text');
 
@@ -206,7 +202,8 @@ const Home: FunctionalComponent = () => {
       rst += '\t.. annotation::\n\t\t' + annotation.annotation + '\n\n';
     });
 
-    const json: MyType[] = jsonResult;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const json: any = jsonResult;
     json[0].language = syntaxHighlight;
     json[1].content = code;
     json[1].annotatedContent = textvalue;
