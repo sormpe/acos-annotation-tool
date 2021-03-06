@@ -11,7 +11,6 @@ interface CodeProps {
 
 const CodeBlock: FunctionalComponent<CodeProps> = (props: CodeProps) => {
   const { code, language } = props;
-  console.log('lang', language);
   return (
     <div id="content-block">
       <Highlight {...defaultProps} theme={undefined} code={code} language={language}>

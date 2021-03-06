@@ -6,7 +6,7 @@ import parse from 'html-react-parser';
 
 import AceEditor from 'react-ace';
 
-import 'ace-builds/src-noconflict/mode-javascript';
+import 'ace-builds/src-noconflict/mode-html';
 import 'ace-builds/src-noconflict/mode-python';
 import 'ace-builds/src-noconflict/mode-c_cpp';
 import 'ace-builds/src-noconflict/mode-css';
@@ -371,7 +371,7 @@ const Home: FunctionalComponent = () => {
       const pureContents = [];
       const beforeAnnotations = [];
       const afterAnnotations = [];
-      const locIndexes = [];
+      const locIndeces = [];
       let modifiedCode = textvalue;
 
       for (let i = 0; i < aceEditor.selection.rangeList.ranges.length; i++) {
@@ -398,7 +398,7 @@ const Home: FunctionalComponent = () => {
         afterAnnotations.push(afterAnnotation.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
 
         const locIndex = from - (beforeAnnotation.match(/«/g) || []).length * 2 - (beforeAnnotation.match(/»/g) || []).length * 2;
-        locIndexes.push(locIndex);
+        locIndeces.push(locIndex);
 
         modifiedCode = replaceAt(from + i * 4, to + i * 4, index + '«' + selection + '»' + index, modifiedCode);
       }
@@ -413,7 +413,7 @@ const Home: FunctionalComponent = () => {
         beforeContent: beforeAnnotations,
         afterContent: afterAnnotations,
         annotation: '',
-        locIndex: locIndexes
+        locIndex: locIndeces
       });
 
       // aceEditor.setValue(modifiedCode);
@@ -770,13 +770,7 @@ const Home: FunctionalComponent = () => {
               Reset
             </button>
           </div>
-          {/*
-        <pre>
-          <code>
-            <textarea onKeyDown={handleKeyDown} value={textvalue} class={style['text-area']} id="code-to-annotate" onInput={handleChange} />
-          </code>
-        </pre>
-        */}
+
           <AceEditor
             value={textvalue}
             onLoad={(aceEditor): void => setAceEditor(aceEditor)}
