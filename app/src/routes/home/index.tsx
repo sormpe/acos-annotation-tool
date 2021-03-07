@@ -612,14 +612,9 @@ const Home: FunctionalComponent = () => {
     if (e) {
       const nodes = e.children[0];
 
-      const recurringTextFromLinesArray = [];
-
       for (let i = 0; i < nodes.children.length; i++) {
         const e = nodes.children[i] as HTMLElement;
 
-        for (let j = 0; j < e.children.length; j++) {
-          recurringTextFromLinesArray.push(e.children[j]);
-        }
         for (let k = 0; k < nodes.children.length; k++) {
           nodes.children[k].textContent = '';
         }
