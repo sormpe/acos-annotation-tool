@@ -232,7 +232,7 @@ const Home: FunctionalComponent = () => {
               const pureContents = [];
               const beforeContents = [];
               const afterContents = [];
-              const locIndexes = [];
+              const locIndices = [];
 
               const idx = annotation.index;
               const startRegexp = new RegExp(idx + '«', 'g');
@@ -271,8 +271,15 @@ const Home: FunctionalComponent = () => {
 
                 afterContents.push(nextAnno.replace(/[0-9]+«/g, '').replace(/»+[0-9]/g, ''));
               }
-              for (const f of pureContents) {
-                locIndexes.push(e.indexOf(f));
+
+              const subs = [];
+              for (const s of startIndices) {
+                subs.push(e.substring(0, s));
+              }
+
+              // eslint-disable-next-line @typescript-eslint/no-for-in-array
+              for (const f in pureContents) {
+                locIndices.push(subs[f].length - (subs[f].match(/[0-9]+«/g) || []).length * 2 - (subs[f].match(/»+[0-9]/g) || []).length * 2);
               }
 
               updateAnnotations({
@@ -283,7 +290,7 @@ const Home: FunctionalComponent = () => {
                 beforeContent: beforeContents,
                 afterContent: afterContents,
                 annotation: annotation.annotation,
-                locIndex: locIndexes
+                locIndex: locIndices
               });
             }
           } else {
