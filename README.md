@@ -4,11 +4,26 @@
 
 This is a repository for Acos server tool called "code annotation tool". With this tool course instructors can easily create annotations that highlights specific parts of a program code.
 
-The tool generates both RST and spesific JSON object which is used within spesific code annotation packages. The actual json handling is done by spesific code annotation content type.
+Please note that the tool is just a tool for _previewing_ the code annotations. It does not actually create any HTML or CSS which you could copypaste somewhere. Instead, the tool generates both RST and spesific JSON object. The RST can be used with A+ system with help of [spesific rst tools](https://version.aalto.fi/gitlab/piitulr1/aplus-rst-tools-ae/). The JSON is used within [Acos](https://github.com/acos-server/acos-server) and the actual JSON handling is done by spesific code annotation [Acos content type](https://github.com/sormpe/acos-code-annotation).
 
 ## JSON syntax
 
-TODO
+The tool generated following JSON.
+
+```javascript
+<name_of_the_object> = [
+    {
+      language: ''
+    },
+    {
+      content: '',
+      annotatedContent: ''
+    },
+    {
+      annotations: []
+    }
+  ]
+```
 
 ## Install
 
