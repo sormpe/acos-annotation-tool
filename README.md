@@ -6,6 +6,8 @@ This is a repository for Acos server tool called "code annotation tool". With th
 
 Please note that the tool is just for _previewing_ the code annotations. It does not actually create any HTML or CSS which you could copypaste somewhere. Instead, the tool generates both RST and spesific JSON object. The RST can be used within [A+ Learning Management System](https://github.com/apluslms/a-plus) with help of [spesific rst tools](https://version.aalto.fi/gitlab/piitulr1/aplus-rst-tools-ae/). The JSON is used within [Acos](https://github.com/acos-server/acos-server) and the actual JSON handling is done by spesific code annotation [Acos content type](https://github.com/sormpe/acos-code-annotation).
 
+You can test the deployed version (from master branch) of the tool [here](https://fervent-panini-0fa2cb.netlify.app/code-annotation-tool/)
+
 ## JSON syntax
 
 The tool generates following JSON.
