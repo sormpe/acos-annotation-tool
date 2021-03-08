@@ -36,7 +36,7 @@ Content type which handles the generated JSON can be found in [here](https://git
 
 ####
 
-Sample content package TODO
+Sample content package [here](https://github.com/sormpe/code-annotation-sample)
 
 ## License
 
